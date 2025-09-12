@@ -130,5 +130,21 @@ namespace TrackCubed.Maui.ViewModels
                 });
             }
         }
+
+        [RelayCommand]
+        private async Task GoToEditItemAsync(CubedItemDto item)
+        {
+            if (item == null) return;
+
+            // Explicitly define the dictionary type
+            var navigationParameter = new Dictionary<string, object>
+            {
+                { "ItemToEdit", item }
+            };
+
+            // Navigate to the page, passing the selected item as a parameter.
+            // The key "ItemToEdit" must match the QueryProperty in the target ViewModel.
+            await Shell.Current.GoToAsync(nameof(AddCubedItemPage), navigationParameter);
+        }
     }
 }

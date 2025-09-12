@@ -13,58 +13,72 @@ using TrackCubed.Shared.Models;
 
 namespace TrackCubed.Maui.ViewModels
 {
-    [QueryProperty(nameof(CubedItem), "CubedItem")]
+    [QueryProperty(nameof(ItemToEdit), "ItemToEdit")]
     public partial class AddCubedItemViewModel : ObservableObject
     {
         private readonly CubedDataService _dataService;
+        private bool _isEditMode;
 
         [ObservableProperty]
-        private string _name;
+        private string _pageTitle;
 
         [ObservableProperty]
-        private string _link;
-
+        private string _saveButtonText;
+        
         [ObservableProperty]
-        private string _description;
+        private CubedItemDto _itemToEdit;
 
-        [ObservableProperty]
-        private string _notes;
+        // Form properties
+        [ObservableProperty] private Guid _itemId;
+        [ObservableProperty] private string _name;
+        [ObservableProperty] private string _link;
+        [ObservableProperty] private string _description;
+        [ObservableProperty] private string _notes;
+        [ObservableProperty] private CubedItemType _itemType;
 
         // Add other properties for other fields as needed
 
         public AddCubedItemViewModel(CubedDataService dataService)
         {
             _dataService = dataService;
+            PageTitle = "Add New Item"; // Default title
+            SaveButtonText = "Create"; // Default text for "Add Mode"
         }
 
         [RelayCommand]
         private async Task SaveAsync()
         {
-            // Create the DTO with user-provided data
-            var newItemDto = new CubedItemCreateDto
+            if (_isEditMode)
             {
-                Name = this.Name,
-                Link = this.Link,
-                Description = this.Description,
-                Notes = this.Notes,
-                ItemType = CubedItemType.Link
-            };
-
-            // Send the DTO to the data service
-            var createdItem = await _dataService.AddCubedItemAsync(newItemDto);
-
-            if (createdItem != null)
-            {
-                // Send a message to any listening page that the items need to be refreshed.
-                WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
-
-                // Go back to the main page.
-                await Shell.Current.GoToAsync("..");
+                var updatedDto = new CubedItemDto
+                {
+                    Id = this.ItemId,
+                    Name = this.Name,
+                    Link = this.Link,
+                    Description = this.Description,
+                    ItemType = this.ItemType,
+                    Notes = this.Notes
+                };
+                bool success = await _dataService.UpdateCubedItemAsync(updatedDto);
+                if (!success) await Shell.Current.DisplayAlert("Error", "Failed to update.", "OK");
             }
             else
             {
-                await Shell.Current.DisplayAlert("Error", "Failed to save the new item. Please try again.", "OK");
+                var newItemDto = new CubedItemCreateDto
+                {
+                    Name = this.Name,
+                    Link = this.Link,
+                    Description = this.Description,
+                    Notes = this.Notes,
+                    ItemType = CubedItemType.Link
+                };
+                var createdItem = await _dataService.AddCubedItemAsync(newItemDto);
+                if (createdItem == null) await Shell.Current.DisplayAlert("Error", "Failed to save.", "OK");
             }
+
+            // Regardless of add or edit, notify the main page to refresh and navigate back.
+            WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
+            await Shell.Current.GoToAsync("..");
         }
 
         [RelayCommand]
@@ -72,5 +86,27 @@ namespace TrackCubed.Maui.ViewModels
         {
             await Shell.Current.GoToAsync("..");
         }
+
+        // This method is automatically called by MAUI's navigation system
+        // when the ItemToEdit property is set.
+        partial void OnItemToEditChanged(CubedItemDto value)
+        {
+            System.Diagnostics.Debug.WriteLine($"[AddCubedItemViewModel] OnItemToEditChanged called. Item is {(value == null ? "NULL" : "NOT NULL")}");
+
+            if (value != null)
+            {
+                _isEditMode = true;
+                PageTitle = "Edit Item";
+                SaveButtonText = "Update"; 
+                // Populate the form fields with the item's data
+                ItemId = value.Id;
+                Name = value.Name;
+                Link = value.Link;
+                Description = value.Description;
+                ItemType = value.ItemType;
+                Notes = value.Notes;
+            }
+        }
+
     }
 }

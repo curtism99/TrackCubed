@@ -21,6 +21,12 @@
                     <DataTemplate x:DataType="dtos:CubedItemDto">
                         <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
                                BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer 
+                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
+                            CommandParameter="{Binding .}"/>
+                            </Frame.GestureRecognizers>
+                            
                             <!-- We use a Grid to position the details and the button -->
                             <Grid ColumnDefinitions="*, Auto">
                                 <VerticalStackLayout Spacing="5">

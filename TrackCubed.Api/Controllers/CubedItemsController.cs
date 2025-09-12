@@ -53,6 +53,7 @@ namespace TrackCubed.Api.Controllers
                                           Link = c.Link,
                                           Description = c.Description,
                                           ItemType = c.ItemType,
+                                          Notes = c.Notes,
                                           CreatedOn = c.CreatedOn,
                                           CreatedById = c.CreatedById
                                       })
@@ -140,6 +141,52 @@ namespace TrackCubed.Api.Controllers
             await _context.SaveChangesAsync();
 
             // 5. Return a "204 No Content" response, which is the standard for a successful DELETE.
+            return NoContent();
+        }
+
+        // PUT: api/CubedItems/1234-5678-9012-3456
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateCubedItem(Guid id, CubedItemDto itemDto)
+        {
+            // A quick check to ensure the ID in the URL matches the ID in the body, if it exists.
+            if (id != itemDto.Id)
+            {
+                return BadRequest("ID mismatch.");
+            }
+
+            // 1. Get the current user.
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            // 2. Find the existing item in the database.
+            // CRITICAL SECURITY CHECK: Ensure the item belongs to the current user.
+            var itemToUpdate = await _context.CubedItems
+                                             .FirstOrDefaultAsync(c => c.Id == id && c.CreatedById == user.Id);
+
+            if (itemToUpdate == null)
+            {
+                return NotFound("Item not found or you do not have permission to edit it.");
+            }
+
+            // 3. Update the properties from the DTO.
+            itemToUpdate.Name = itemDto.Name;
+            itemToUpdate.Link = itemDto.Link;
+            itemToUpdate.Description = itemDto.Description;
+            itemToUpdate.ItemType = itemDto.ItemType;
+            itemToUpdate.Notes = itemDto.Notes;
+            // We should also update the "last accessed" date
+            itemToUpdate.DateLastAccessed = DateTime.UtcNow;
+            // Note: We do NOT update CreatedOn or CreatedById.
+
+            // 4. Save the changes to the database.
+            await _context.SaveChangesAsync();
+
+            // 5. Return "204 No Content" for a successful update.
             return NoContent();
         }
     }

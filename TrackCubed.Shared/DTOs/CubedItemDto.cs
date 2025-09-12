@@ -18,7 +18,7 @@ namespace TrackCubed.Shared.DTOs
         public string? Description { get; set; }
         public CubedItemType ItemType { get; set; }
         public DateTime CreatedOn { get; set; }
-
+        public string? Notes { get; set; }
         // We can include the user's ID if needed
         public int CreatedById { get; set; }
     }

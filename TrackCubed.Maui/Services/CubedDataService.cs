@@ -130,5 +130,27 @@ namespace TrackCubed.Maui.Services
                 return false;
             }
         }
+
+        public async Task<bool> UpdateCubedItemAsync(CubedItemDto itemToUpdate)
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return false;
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                // Use PutAsJsonAsync, passing the ID in the URL and the DTO in the body.
+                var response = await _httpClient.PutAsJsonAsync($"api/CubedItems/{itemToUpdate.Id}", itemToUpdate)
+                                                .ConfigureAwait(false);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception updating CubedItem: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

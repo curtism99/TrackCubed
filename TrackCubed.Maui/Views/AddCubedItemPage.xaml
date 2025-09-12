@@ -4,7 +4,7 @@
              x:Class="TrackCubed.Maui.Views.AddCubedItemPage"
              xmlns:viewmodels="clr-namespace:TrackCubed.Maui.ViewModels"
              x:DataType="viewmodels:AddCubedItemViewModel"
-            Title="Add New Item">
+            Title="{Binding PageTitle}">
     <ScrollView>
         <VerticalStackLayout Spacing="10" Padding="20">
             <Label Text="Name" />
@@ -20,7 +20,7 @@
             <Editor Text="{Binding Notes}" Placeholder="Personal notes about this item..." AutoSize="TextChanges" HeightRequest="150"/>
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,20,0,0">
-                <Button Grid.Column="0" Text="Save" Command="{Binding SaveCommand}" />
+                <Button Grid.Column="0" Text="{Binding SaveButtonText}" Command="{Binding SaveCommand}" />
                 <Button Grid.Column="1" Text="Cancel" Command="{Binding CancelCommand}" Style="{StaticResource Key=SecondaryButton}" />
             </Grid>
         </VerticalStackLayout>
