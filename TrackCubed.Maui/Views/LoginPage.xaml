@@ -2,15 +2,16 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              x:Class="TrackCubed.Maui.Views.LoginPage"
-             Title="LoginPage">
+             Title="Login Page">
     <VerticalStackLayout 
         VerticalOptions="Center" 
         HorizontalOptions="Center"
         Spacing="25">
 
         <Label 
-            Text="TrackCubed"
+            Text="Track³"
             FontSize="Header"
+            FontAttributes="Bold"
             HorizontalTextAlignment="Center" />
 
         <Label 

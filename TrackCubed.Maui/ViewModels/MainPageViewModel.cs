@@ -54,7 +54,7 @@ namespace TrackCubed.Maui.ViewModels
             _cubedDataService = cubedDataService;
             _authService = authService; // For the SignOut command
             Items = new ObservableCollection<CubedItemDto>();
-            Title = "My Cubed Items";
+            Title = "Track³ | My Cubes";
             AppliedTags = new ObservableCollection<string>();
             ItemTypeFilterOptions = new ObservableCollection<string>();
             TagSuggestions = new ObservableCollection<string>();

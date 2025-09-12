@@ -28,7 +28,7 @@
 
             <!-- About Section -->
             <VerticalStackLayout Spacing="10">
-                <Label Text="ABOUT" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                <Label Text="About Track³" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
                 <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
                 <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
                     <Label.FormattedText>
