@@ -1,5 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TrackCubed.Api.Data;
@@ -226,7 +227,8 @@ namespace TrackCubed.Api.Controllers
         public async Task<ActionResult<IEnumerable<CubedItemDto>>> SearchMyCubedItems(
             [FromQuery] string? searchText,
             [FromQuery] string? itemType,
-            [FromQuery] List<string>? tags)
+            [FromQuery] List<string>? tags,
+            [FromQuery] string tagMode = "any") // "any" for inclusive, "all" for exclusive
         {
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.AsNoTracking()
@@ -259,11 +261,24 @@ namespace TrackCubed.Api.Controllers
             }
 
             // 4. Add Tag filter (if provided)
-            // This query finds items where AT LEAST ONE of the item's tags is in the provided list.
             if (tags != null && tags.Any())
             {
                 var lowerTags = tags.Select(t => t.ToLower()).ToList();
-                query = query.Where(c => c.Tags.Any(itemTag => lowerTags.Contains(itemTag.Name)));
+                var tagCount = lowerTags.Count;
+
+                if (tagMode.Equals("all", StringComparison.OrdinalIgnoreCase))
+                {
+                    // EXCLUSIVE (AND) search: The item must have ALL the specified tags.
+                    // We do this by checking if the count of matching tags on an item
+                    // is equal to the total number of tags we are searching for.
+                    query = query.Where(c => c.Tags.Count(itemTag => lowerTags.Contains(itemTag.Name)) == tagCount);
+                }
+                else
+                {
+                    // INCLUSIVE (OR) search: The item must have AT LEAST ONE of the specified tags.
+                    // (This is the logic you already had).
+                    query = query.Where(c => c.Tags.Any(itemTag => lowerTags.Contains(itemTag.Name)));
+                }
             }
 
             // 5. Execute the final, dynamically built query and map to DTOs.

@@ -41,6 +41,9 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private string _tagSearchText; // For the "Add Tag" entry field
 
+        [ObservableProperty]
+        private bool _isExclusiveTagSearch; // Bound to the new Switch control
+
         // Inject both services
         public MainPageViewModel(CubedDataService cubedDataService, AuthService authService)
         {
@@ -74,9 +77,11 @@ namespace TrackCubed.Maui.ViewModels
 
             try
             {
-                // Instead of getting ALL items, we call the new Search method.
-                // We pass it the current values of the filter properties that are bound to the UI.
-                var loadedItems = await _cubedDataService.SearchItemsAsync(SearchText, SelectedItemTypeFilter, new List<string>(AppliedTags));
+                // Translate the boolean from the UI into the string the API expects.
+                string mode = IsExclusiveTagSearch ? "all" : "any";
+
+                // Call the updated search method with the new mode parameter.
+                var loadedItems = await _cubedDataService.SearchItemsAsync(SearchText, SelectedItemTypeFilter, new List<string>(AppliedTags), mode);
 
                 // We must switch back to the main thread to update the UI-bound collection.
                 // This UI update logic remains exactly the same.
@@ -217,6 +222,12 @@ namespace TrackCubed.Maui.ViewModels
                 AppliedTags.Remove(tagToRemove);
                 LoadItemsCommand.Execute(null); // Explicitly refresh
             }
+        }
+
+        // When the user toggles the switch, re-run the search
+        partial void OnIsExclusiveTagSearchChanged(bool value)
+        {
+            LoadItemsCommand.Execute(null);
         }
     }
 }

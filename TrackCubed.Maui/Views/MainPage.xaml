@@ -34,6 +34,15 @@
                     Command="{Binding AddTagFilterCommand}" />
             </Grid>
 
+            <!-- START: NEW UI FOR TAG SEARCH MODE -->
+            <HorizontalStackLayout Spacing="10" Margin="0,10,0,0" VerticalOptions="Center">
+                <Switch IsToggled="{Binding IsExclusiveTagSearch}" />
+                <Label Text="Match ALL of the selected tags (exclusive)" 
+           VerticalOptions="Center" />
+            </HorizontalStackLayout>
+            <!-- END: NEW UI FOR TAG SEARCH MODE -->
+
+
             <!-- Display area for currently applied tag filters -->
             <FlexLayout BindableLayout.ItemsSource="{Binding AppliedTags}" 
                     Wrap="Wrap" 
