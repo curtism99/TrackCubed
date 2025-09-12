@@ -48,7 +48,6 @@ The solution is divided into three main projects:
 
 ## Future Work / Roadmap
 
-*   [ ] Implement "Edit" functionality for Cubed Items.
 *   [ ] Build out the tagging system (add/remove tags, filter by tags).
 *   [ ] Implement a full-text search feature.
 *   [ ] Add support for different item types (e.g., images with uploads to Blob Storage).
