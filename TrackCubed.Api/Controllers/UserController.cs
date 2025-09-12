@@ -39,7 +39,7 @@ namespace TrackCubed.Api.Controllers
             if (user == null)
             {
                 // User does not exist, create a new one
-                var newUser = new ApplicationUsers
+                var newUser = new ApplicationUser
                 {
                     EntraObjectId = entraObjectId,
                     DisplayName = User.FindFirstValue("name") ?? "N/A",

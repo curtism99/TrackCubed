@@ -14,9 +14,29 @@ namespace TrackCubed.Api.Data
 
         // This DbSet property represents the "Users" table in your database.
         // EF Core will create a table named "ApplicationUsers" by default.
-        public DbSet<ApplicationUsers> ApplicationUsers { get; set; }
+        public DbSet<ApplicationUser> ApplicationUsers { get; set; }
 
         // You will add other DbSet<T> properties here for your other models,
         // like CubedItem, Tag, etc., as your application grows.
+
+        public DbSet<CubedItem> CubedItems { get; set; }
+        public DbSet<Tag> Tags { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            // Configure the one-to-many relationship between User and CubedItem
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(u => u.CubedItems)
+                .WithOne(c => c.CreatedBy)
+                .HasForeignKey(c => c.CreatedById)
+                .OnDelete(DeleteBehavior.Cascade); // If a user is deleted, delete their items
+
+            // Configure a unique index on Tag.Name to prevent duplicate tags
+            modelBuilder.Entity<Tag>()
+                .HasIndex(t => t.Name)
+                .IsUnique();
+        }
     }
 }

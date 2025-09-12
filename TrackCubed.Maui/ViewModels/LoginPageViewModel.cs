@@ -9,6 +9,7 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 using TrackCubed.Maui.Services;
+using TrackCubed.Maui.Views;
 
 namespace TrackCubed.Maui.ViewModels
 {
@@ -74,8 +75,6 @@ namespace TrackCubed.Maui.ViewModels
                 if (response.IsSuccessStatusCode)
                 {
                     // User is now logged in and registered in our backend!
-                    // Navigate to the main app page. This assumes you have a route named "MainPage"
-                    // defined in your AppShell.xaml.
                     await Shell.Current.GoToAsync("//MainPage");
                 }
                 else

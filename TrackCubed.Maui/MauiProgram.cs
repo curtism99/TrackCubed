@@ -35,12 +35,15 @@ namespace TrackCubed.Maui
 
             // Register Services
             builder.Services.AddSingleton<AuthService>();
+            builder.Services.AddSingleton<CubedDataService>();
 
             // Register ViewModels
             builder.Services.AddTransient<LoginPageViewModel>();
+            builder.Services.AddTransient<MainPageViewModel>();
 
             // Register Pages
             builder.Services.AddTransient<LoginPage>();
+            builder.Services.AddTransient<MainPage>();
 
             return builder.Build();
         }

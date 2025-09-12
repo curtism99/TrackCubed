@@ -8,8 +8,13 @@
     Title="TrackCubed.Maui">
 
     <ShellContent
-        Title="Login"
-        ContentTemplate="{DataTemplate views:LoginPage}"
-        Route="LoginPage" />
+    Title="Login"
+    ContentTemplate="{DataTemplate views:LoginPage}"
+    Route="LoginPage" />
+
+    <ShellContent
+    Title="Home"
+    ContentTemplate="{DataTemplate views:MainPage}"
+    Route="MainPage" />
 
 </Shell>
