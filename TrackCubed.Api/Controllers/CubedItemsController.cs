@@ -55,7 +55,8 @@ namespace TrackCubed.Api.Controllers
                                           ItemType = c.ItemType,
                                           Notes = c.Notes,
                                           CreatedOn = c.CreatedOn,
-                                          CreatedById = c.CreatedById
+                                          CreatedById = c.CreatedById,
+                                          Tags = c.Tags.Select(t => t.Name).ToList()
                                       })
                                       .ToListAsync(); // Execute the optimized query
 
@@ -90,6 +91,8 @@ namespace TrackCubed.Api.Controllers
                 CreatedOn = DateTime.UtcNow,
                 DateLastAccessed = DateTime.UtcNow
             };
+
+            await UpdateItemTags(newCubedItem, itemDto.Tags);
 
             _context.CubedItems.Add(newCubedItem);
             await _context.SaveChangesAsync();
@@ -173,15 +176,19 @@ namespace TrackCubed.Api.Controllers
                 return NotFound("Item not found or you do not have permission to edit it.");
             }
 
-            // 3. Update the properties from the DTO.
+            // 3. Update properties from the DTO
             itemToUpdate.Name = itemDto.Name;
             itemToUpdate.Link = itemDto.Link;
             itemToUpdate.Description = itemDto.Description;
-            itemToUpdate.ItemType = itemDto.ItemType;
             itemToUpdate.Notes = itemDto.Notes;
-            // We should also update the "last accessed" date
+            itemToUpdate.ItemType = itemDto.ItemType;
             itemToUpdate.DateLastAccessed = DateTime.UtcNow;
             // Note: We do NOT update CreatedOn or CreatedById.
+
+
+            // Make sure to include the existing tags so EF Core can track changes
+            await _context.Entry(itemToUpdate).Collection(i => i.Tags).LoadAsync();
+            await UpdateItemTags(itemToUpdate, itemDto.Tags);
 
             // 4. Save the changes to the database.
             await _context.SaveChangesAsync();
@@ -189,5 +196,33 @@ namespace TrackCubed.Api.Controllers
             // 5. Return "204 No Content" for a successful update.
             return NoContent();
         }
+
+        private async Task UpdateItemTags(CubedItem item, List<string> tagNames)
+        {
+            // Clear existing tags to handle removals
+            item.Tags.Clear();
+
+            if (tagNames == null || !tagNames.Any()) return;
+
+            foreach (var tagName in tagNames.Select(t => t.Trim().ToLower()).Distinct())
+            {
+                if (string.IsNullOrWhiteSpace(tagName)) continue;
+
+                // Find an existing tag or create a new one
+                var existingTag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
+                if (existingTag != null)
+                {
+                    item.Tags.Add(existingTag);
+                }
+                else
+                {
+                    item.Tags.Add(new Tag { Name = tagName });
+                }
+            }
+        }
+
+
+
+
     }
 }

@@ -21,5 +21,6 @@ namespace TrackCubed.Shared.DTOs
         public string? Notes { get; set; }
         // We can include the user's ID if needed
         public int CreatedById { get; set; }
+        public List<string> Tags { get; set; } = new List<string>();
     }
 }

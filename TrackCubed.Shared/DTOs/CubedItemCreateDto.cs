@@ -27,5 +27,7 @@ namespace TrackCubed.Shared.DTOs
         public string? Notes { get; set; }
 
         public CubedItemType ItemType { get; set; }
+
+        public List<string> Tags { get; set; } = new List<string>();
     }
 }
