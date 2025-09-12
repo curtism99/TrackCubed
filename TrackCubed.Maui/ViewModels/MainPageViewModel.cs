@@ -7,6 +7,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TrackCubed.Maui.Services;
+using TrackCubed.Maui.Views;
+using TrackCubed.Shared.DTOs;
 using TrackCubed.Shared.Models;
 
 namespace TrackCubed.Maui.ViewModels
@@ -14,27 +16,32 @@ namespace TrackCubed.Maui.ViewModels
     public partial class MainPageViewModel : ObservableObject
     {
         private readonly CubedDataService _cubedDataService;
+        private readonly AuthService _authService; // Also inject AuthService
 
         [ObservableProperty]
-        private ObservableCollection<CubedItem> _items;
+        private ObservableCollection<CubedItemDto> _items;
 
         [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsNotBusy))]
         private bool _isBusy;
 
-        // Inject the new data service
-        public MainPageViewModel(CubedDataService cubedDataService)
-        {
-            _cubedDataService = cubedDataService;
-            Items = new ObservableCollection<CubedItem>();
-            Title = "My Cubed Items";
-        }
+        public bool IsNotBusy => !IsBusy;
 
         [ObservableProperty]
         private string _title;
 
-        // This command will be called when the page appears
+        // Inject both services
+        public MainPageViewModel(CubedDataService cubedDataService, AuthService authService)
+        {
+            _cubedDataService = cubedDataService;
+            _authService = authService; // For the SignOut command
+            Items = new ObservableCollection<CubedItemDto>();
+            Title = "My Cubed Items";
+        }
+
+        // This is the new command for loading/refreshing data
         [RelayCommand]
-        private async Task PageAppearingAsync()
+        private async Task LoadItemsAsync()
         {
             if (IsBusy) return;
 
@@ -58,9 +65,14 @@ namespace TrackCubed.Maui.ViewModels
         [RelayCommand]
         private async Task AddNewItemAsync()
         {
-            // We will create this page in the future. For now, just a placeholder.
-            await Shell.Current.DisplayAlert("Not Implemented", "The 'Add New Item' page has not been created yet.", "OK");
-            // The real navigation will be: await Shell.Current.GoToAsync("AddItemPage");
+            await Shell.Current.GoToAsync(nameof(AddCubedItemPage));
+        }
+
+        [RelayCommand]
+        private async Task SignOutAsync()
+        {
+            await _authService.SignOutAsync();
+            AppShell.OnLoginStateChanged?.Invoke();
         }
     }
 }

@@ -2,26 +2,33 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:model="clr-namespace:TrackCubed.Shared.Models;assembly=TrackCubed.Shared"
+             xmlns:dtos="clr-namespace:TrackCubed.Shared.DTOs;assembly=TrackCubed.Shared"
+             xmlns:viewmodel="clr-namespace:TrackCubed.Maui.ViewModels"
+             x:DataType="viewmodel:MainPageViewModel"
              x:Class="TrackCubed.Maui.Views.MainPage"
               Title="{Binding Title}">
-    
+
     <Grid RowDefinitions="*, Auto">
 
-        <ActivityIndicator IsRunning="{Binding IsBusy}" IsVisible="{Binding IsBusy}" VerticalOptions="Center" HorizontalOptions="Center" />
-
-        <CollectionView Grid.Row="0" ItemsSource="{Binding Items}" VerticalOptions="Fill">
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="model:CubedItem">
-                    <Frame Padding="15" Margin="10" CornerRadius="8" BorderColor="LightGray">
-                        <VerticalStackLayout Spacing="5">
-                            <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" />
-                            <Label Text="{Binding Description}" FontSize="Small" TextColor="Gray" />
-                            <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" IsVisible="{Binding Link, Converter={StaticResource IsNotNullOrEmptyConverter}}" />
-                        </VerticalStackLayout>
-                    </Frame>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <!-- The RefreshView wraps the list and provides pull-to-refresh -->
+        <RefreshView Grid.Row="0"
+                     Command="{Binding LoadItemsCommand}"
+                     IsRefreshing="{Binding IsBusy}">
+            <CollectionView ItemsSource="{Binding Items}"
+                            VerticalOptions="Fill">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="dtos:CubedItemDto">
+                        <Frame Padding="15" Margin="10" CornerRadius="8" BorderColor="LightGray">
+                            <VerticalStackLayout Spacing="5">
+                                <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" />
+                                <Label Text="{Binding Description}" FontSize="Small" TextColor="Gray" />
+                                <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" />
+                            </VerticalStackLayout>
+                        </Frame>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
 
         <Button Grid.Row="1" 
                 Text="Add New Item" 

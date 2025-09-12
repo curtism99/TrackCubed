@@ -1,4 +1,5 @@
 ﻿using TrackCubed.Maui.Services;
+using TrackCubed.Maui.Views;
 
 namespace TrackCubed.Maui
 {
@@ -16,6 +17,9 @@ namespace TrackCubed.Maui
             // Subscribe to the event so we can react to manual logins/logouts
             // We no longer call the check from the constructor.
             AppShell.OnLoginStateChanged += SetUiForLoginState;
+
+            // Register routes for pages that will be navigated to.
+            Routing.RegisterRoute(nameof(AddCubedItemPage), typeof(AddCubedItemPage));
         }
 
         // OnAppearing is a built-in MAUI lifecycle method that is called

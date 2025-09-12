@@ -16,9 +16,9 @@ namespace TrackCubed.Maui.Views
         {
             base.OnAppearing();
             // Execute the command to load data when the page becomes visible
-            if (_viewModel.PageAppearingCommand.CanExecute(null))
+            if (_viewModel.LoadItemsCommand.CanExecute(null))
             {
-                await _viewModel.PageAppearingCommand.ExecuteAsync(null);
+                await _viewModel.LoadItemsCommand.ExecuteAsync(null);
             }
         }
     }
