@@ -2,9 +2,11 @@
 <Application xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:local="clr-namespace:TrackCubed.Maui"
+             xmlns:converters="clr-namespace:TrackCubed.Maui.Converters"
              x:Class="TrackCubed.Maui.App">
     <Application.Resources>
         <ResourceDictionary>
+            <converters:CountToBoolConverter x:Key="CountToBoolConverter" />
             <ResourceDictionary.MergedDictionaries>
                 <ResourceDictionary Source="Resources/Styles/Colors.xaml" />
                 <ResourceDictionary Source="Resources/Styles/Styles.xaml" />

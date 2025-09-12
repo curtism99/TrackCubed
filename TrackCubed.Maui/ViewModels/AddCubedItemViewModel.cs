@@ -33,6 +33,12 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private ObservableCollection<string> _tags;
 
+
+        // A NEW collection to hold the suggestions returned from the API.
+        [ObservableProperty]
+        private ObservableCollection<string> _tagSuggestions;
+
+
         // The text from the "Add Tag" entry field
         [ObservableProperty]
         private string _newTagText;
@@ -69,6 +75,8 @@ namespace TrackCubed.Maui.ViewModels
             SaveButtonText = "Create"; // Default text for "Add Mode"
             Tags = new ObservableCollection<string>(); // Initialize the collection
             PredefinedItemTypes = new ObservableCollection<string>();
+            Tags = new ObservableCollection<string>();
+            TagSuggestions = new ObservableCollection<string>();
         }
 
         [RelayCommand]
@@ -124,31 +132,20 @@ namespace TrackCubed.Maui.ViewModels
             await Shell.Current.GoToAsync("..");
         }
 
-        // The only job of this method is now to set the flag and page title.
-        // It does NOT try to apply data, because the data isn't ready yet.
-        partial void OnItemToEditChanged(CubedItemDto value)
-        {
-            if (value != null)
-            {
-                _isEditMode = true;
-                PageTitle = "Edit Item";
-                SaveButtonText = "Update";
-            }
-        }
 
         [RelayCommand]
-        private void AddTag()
+        private void AddTag(string tagToAdd)
         {
-            if (string.IsNullOrWhiteSpace(NewTagText)) return;
-
-            var tagToAdd = NewTagText.Trim();
-            if (!Tags.Contains(tagToAdd, StringComparer.OrdinalIgnoreCase))
+            if (string.IsNullOrWhiteSpace(tagToAdd)) return;
+            var tag = tagToAdd.Trim();
+            if (!Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
             {
-                Tags.Add(tagToAdd);
+                Tags.Add(tag);
             }
 
-            // Clear the entry field for the next tag
+            // Clear the entry field and the suggestions list for a clean UX.
             NewTagText = string.Empty;
+            TagSuggestions.Clear();
         }
 
         [RelayCommand]
@@ -162,16 +159,16 @@ namespace TrackCubed.Maui.ViewModels
 
         // This method is automatically called when the SelectedItemType property changes
         // This is where we will control the visibility of the custom entry field.
-        partial void OnSelectedItemTypeChanged(string value)
-        {
-            IsCustomTypeEntryVisible = value == "Other";
-        }
+        partial void OnSelectedItemTypeChanged(string value) => IsCustomTypeEntryVisible = value == "Other";
 
         // This method is now responsible for ALL data loading and setup.
         [RelayCommand]
-        private async Task LoadDataAsync()
+        private async Task InitializePageAsync()
         {
-            // 1. Fetch the list of types from the API.
+            // Always default to Add mode first
+            PageTitle = "Add New Item";
+            SaveButtonText = "Create";
+
             var types = await _dataService.GetPredefinedItemTypesAsync();
             PredefinedItemTypes.Clear();
             foreach (var type in types)
@@ -179,40 +176,62 @@ namespace TrackCubed.Maui.ViewModels
                 PredefinedItemTypes.Add(type);
             }
 
-            // 2. NOW, check if we are in Edit Mode.
-            if (_isEditMode && ItemToEdit != null)
+            if (ItemToEdit != null)
             {
-                // 3. Populate ALL the form fields at once.
+                _isEditMode = true;
+                PageTitle = "Edit Item";
+                SaveButtonText = "Update";
+
                 ItemId = ItemToEdit.Id;
                 Name = ItemToEdit.Name;
                 Link = ItemToEdit.Link;
                 Description = ItemToEdit.Description;
                 Notes = ItemToEdit.Notes;
 
-                // 4. This is the critical logic to set the Picker correctly.
                 if (!string.IsNullOrEmpty(ItemToEdit.ItemType))
                 {
-                    // If the item's type is a custom one (not in our official list)...
                     if (!PredefinedItemTypes.Contains(ItemToEdit.ItemType))
                     {
-                        // ...temporarily add it to the collection so it can be selected.
                         PredefinedItemTypes.Insert(0, ItemToEdit.ItemType);
-                        SelectedItemType = ItemToEdit.ItemType;
-                        CustomItemType = ItemToEdit.ItemType;
                     }
-                    else
+                    SelectedItemType = ItemToEdit.ItemType;
+                }
+                if (ItemToEdit.Tags != null)
+                {
+                    Tags.Clear();
+                    foreach (var tag in ItemToEdit.Tags)
                     {
-                        // Otherwise, just select it from the existing list.
-                        SelectedItemType = ItemToEdit.ItemType;
+                        Tags.Add(tag);
                     }
                 }
             }
-            else // We are in Add Mode
+
+            if (string.IsNullOrEmpty(SelectedItemType))
             {
-                // Set the default selection for a new item.
                 SelectedItemType = PredefinedItemTypes.FirstOrDefault();
             }
         }
 
+        // This partial method is the magic. It runs every time NewTagText changes.
+        async partial void OnNewTagTextChanged(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value) || value.Length < 2)
+            {
+                TagSuggestions.Clear();
+                return;
+            }
+            var suggestions = await _dataService.GetTagSuggestionsAsync(value);
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                TagSuggestions.Clear();
+                if (suggestions != null)
+                {
+                    foreach (var s in suggestions)
+                    {
+                        TagSuggestions.Add(s);
+                    }
+                }
+            });
+        }
     }
 }

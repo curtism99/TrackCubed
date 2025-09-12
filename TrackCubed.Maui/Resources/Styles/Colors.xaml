@@ -64,4 +64,12 @@
     <Color x:Key="PrimaryTextColorDark">#FFFFFF</Color>
     <Color x:Key="SecondaryTextColorDark">#ACACAC</Color>
 
+    <!-- Light Theme -->
+    <Color x:Key="PopupBackgroundColorLight">#FFFFFF</Color>
+    <Color x:Key="PopupTextColorLight">#212121</Color>
+
+    <!-- Dark Theme -->
+    <Color x:Key="PopupBackgroundColorDark">#3c3c3c</Color>
+    <Color x:Key="PopupTextColorDark">#F2F2F2</Color>
+
 </ResourceDictionary>

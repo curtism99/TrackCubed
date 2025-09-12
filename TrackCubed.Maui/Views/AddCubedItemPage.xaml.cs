@@ -14,9 +14,9 @@ public partial class AddCubedItemPage : ContentPage
     {
         base.OnAppearing();
         // When the page appears, load the dynamic item types.
-        if (BindingContext is AddCubedItemViewModel vm && vm.LoadDataCommand.CanExecute(null))
+        if (BindingContext is AddCubedItemViewModel vm && vm.InitializePageCommand.CanExecute(null))
         {
-            await vm.LoadDataCommand.ExecuteAsync(null);
+            await vm.InitializePageCommand.ExecuteAsync(null);
         }
     }
 }

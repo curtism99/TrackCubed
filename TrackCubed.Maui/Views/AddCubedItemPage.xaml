@@ -35,12 +35,36 @@
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
                 <Entry Grid.Column="0" 
            Text="{Binding NewTagText}"
-           Placeholder="Enter a tag and press add"
-           ReturnCommand="{Binding AddTagCommand}" />
+           Placeholder="Enter a tag and press add" />
                 <Button Grid.Column="1" 
             Text="Add" 
-            Command="{Binding AddTagCommand}" />
+            Command="{Binding AddTagCommand}"
+                    CommandParameter="{Binding NewTagText}" />
             </Grid>
+
+            <!-- START: NEW UI FOR TAG SUGGESTIONS -->
+            <!-- This CollectionView will appear below the Entry when there are suggestions -->
+            <CollectionView ItemsSource="{Binding TagSuggestions}"
+                IsVisible="{Binding TagSuggestions.Count, Converter={StaticResource CountToBoolConverter}}"
+                SelectionMode="None" 
+                Margin="0, -5, 0, 5"
+                BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray900}}">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type x:String}">
+                        <!-- The TapGestureRecognizer calls the AddTagCommand with the tapped item -->
+                        <StackLayout Padding="10, 8" Spacing="0">
+                            <Label Text="{Binding .}" />
+                            <StackLayout.GestureRecognizers>
+                                <TapGestureRecognizer 
+                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodels:AddCubedItemViewModel}}, Path=AddTagCommand}"
+                        CommandParameter="{Binding .}"/>
+                            </StackLayout.GestureRecognizers>
+                        </StackLayout>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+            <!-- END: NEW UI FOR TAG SUGGESTIONS -->
+
 
             <!-- A FlexLayout to display the tags as removable pills -->
             <FlexLayout BindableLayout.ItemsSource="{Binding Tags}" 
