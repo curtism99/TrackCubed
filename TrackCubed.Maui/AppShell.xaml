@@ -5,16 +5,39 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
     xmlns:local="clr-namespace:TrackCubed.Maui"
     xmlns:views="clr-namespace:TrackCubed.Maui.Views"
-    Title="TrackCubed.Maui">
-
+    Title="TrackCubed.Maui"
+    Shell.FlyoutBehavior="Disabled">
+    <!-- 
+      The LoginPage is defined outside of any other container.
+      It's a standalone page that is not part of the main app navigation.
+    -->
     <ShellContent
-    Title="Login"
-    ContentTemplate="{DataTemplate views:LoginPage}"
-    Route="LoginPage" />
+        Title="Login"
+        ContentTemplate="{DataTemplate views:LoginPage}"
+        Route="LoginPage" />
 
-    <ShellContent
-    Title="Home"
-    ContentTemplate="{DataTemplate views:MainPage}"
-    Route="MainPage" />
+    <!-- 
+      THIS IS THE NEW PART: A TabBar for the main application UI.
+      It's given a name so we can control it from C# code.
+      It's hidden by default.
+    -->
+    <TabBar x:Name="MainAppTabs" IsVisible="False">
+        <ShellContent
+            Title="Home"
+            Icon="home.png"
+            ContentTemplate="{DataTemplate views:MainPage}"
+            Route="MainPage" />
 
+            <!-- 
+          FUTURE PAGES GO HERE:
+          When you add a "Search" or "Profile" page, you will add them
+          as additional ShellContent items inside this TabBar.
+        
+          <ShellContent
+              Title="Search"
+              Icon="search.png"
+              ContentTemplate="{DataTemplate views:SearchPage}"
+              Route="SearchPage" />
+        -->
+    </TabBar>
 </Shell>

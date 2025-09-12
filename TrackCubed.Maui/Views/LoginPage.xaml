@@ -21,7 +21,7 @@
                            IsVisible="{Binding IsBusy}" />
 
         <Button Text="Login with Microsoft" 
-                Command="{Binding LoginCommand}"
+                Command="{Binding InteractiveLoginCommand}"
                 IsEnabled="{Binding IsNotBusy}"
                 HorizontalOptions="Center" />
 

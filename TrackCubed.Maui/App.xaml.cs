@@ -2,14 +2,14 @@
 {
     public partial class App : Application
     {
-        public App()
+        // Change the constructor to accept AppShell
+        public App(AppShell appShell)
         {
             InitializeComponent();
+
+            // Use the injected AppShell
+            MainPage = appShell;
         }
 
-        protected override Window CreateWindow(IActivationState? activationState)
-        {
-            return new Window(new AppShell());
-        }
     }
 }

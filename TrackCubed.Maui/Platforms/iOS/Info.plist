@@ -39,5 +39,9 @@
       </array>
     </dict>
   </array>
+  <key>keychain-access-groups</key>
+  <array>
+    <string>$(AppIdentifierPrefix)com.companyname.trackcubed.maui</string>
+  </array>
 </dict>
 </plist>

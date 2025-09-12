@@ -32,6 +32,7 @@ namespace TrackCubed.Maui
                 };
             });
 
+            builder.Services.AddSingleton<AppShell>();
 
             // Register Services
             builder.Services.AddSingleton<AuthService>();

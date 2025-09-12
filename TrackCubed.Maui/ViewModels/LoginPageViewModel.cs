@@ -31,7 +31,7 @@ namespace TrackCubed.Maui.ViewModels
         }
 
         [RelayCommand]
-        private async Task LoginAsync()
+        private async Task InteractiveLoginAsync()
         {
             if (IsBusy)
                 return;
@@ -40,7 +40,7 @@ namespace TrackCubed.Maui.ViewModels
 
             try
             {
-                string accessToken = await _authService.LoginAsync();
+                string accessToken = await _authService.InteractiveLoginAsync();
 
                 if (string.IsNullOrEmpty(accessToken))
                 {
@@ -75,7 +75,9 @@ namespace TrackCubed.Maui.ViewModels
                 if (response.IsSuccessStatusCode)
                 {
                     // User is now logged in and registered in our backend!
-                    await Shell.Current.GoToAsync("//MainPage");
+                    // INSTEAD of navigating, we notify the AppShell that the login state has changed.
+                    // The AppShell will then handle the UI changes and navigation.
+                    AppShell.OnLoginStateChanged?.Invoke();
                 }
                 else
                 {
