@@ -221,8 +221,69 @@ namespace TrackCubed.Api.Controllers
             }
         }
 
+        // GET: api/CubedItems/search?searchText=...&itemType=...&tags=...
+        [HttpGet("search")]
+        public async Task<ActionResult<IEnumerable<CubedItemDto>>> SearchMyCubedItems(
+            [FromQuery] string? searchText,
+            [FromQuery] string? itemType,
+            [FromQuery] List<string>? tags)
+        {
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
 
+            // 1. Start with a base query for the current user's items.
+            // IQueryable is essential here - it lets us build the query step-by-step.
+            var query = _context.CubedItems.Where(c => c.CreatedById == user.Id);
 
+            // 2. Add full-text search filter (if provided)
+            if (!string.IsNullOrWhiteSpace(searchText))
+            {
+                var lowerSearchText = searchText.ToLower();
+                query = query.Where(c =>
+                    c.Name.ToLower().Contains(lowerSearchText) ||
+                    c.Description.ToLower().Contains(lowerSearchText) ||
+                    c.Notes.ToLower().Contains(lowerSearchText) ||
+                    c.Link.ToLower().Contains(lowerSearchText)
+                );
+            }
 
+            // 3. Add Item Type filter (if provided)
+            if (!string.IsNullOrWhiteSpace(itemType) && itemType.ToLower() != "all")
+            {
+                query = query.Where(c => c.ItemType == itemType);
+            }
+
+            // 4. Add Tag filter (if provided)
+            // This query finds items where AT LEAST ONE of the item's tags is in the provided list.
+            if (tags != null && tags.Any())
+            {
+                var lowerTags = tags.Select(t => t.ToLower()).ToList();
+                query = query.Where(c => c.Tags.Any(itemTag => lowerTags.Contains(itemTag.Name)));
+            }
+
+            // 5. Execute the final, dynamically built query and map to DTOs.
+            var results = await query.OrderByDescending(c => c.CreatedOn)
+                                     .Select(c => new CubedItemDto
+                                     {
+                                         // ... mapping logic from your GetMyCubedItems method ...
+                                         Id = c.Id,
+                                         Name = c.Name,
+                                         Link = c.Link,
+                                         Description = c.Description,
+                                         Notes = c.Notes,
+                                         ItemType = c.ItemType,
+                                         CreatedOn = c.CreatedOn,
+                                         CreatedById = c.CreatedById,
+                                         Tags = c.Tags.Select(t => t.Name).ToList()
+                                     })
+                                     .ToListAsync();
+
+            return Ok(results);
+        }
     }
 }

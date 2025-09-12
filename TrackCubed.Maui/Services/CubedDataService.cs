@@ -172,5 +172,61 @@ namespace TrackCubed.Maui.Services
                 return new List<string> { "Link", "Other" }; // Fallback list on error
             }
         }
+
+        public async Task<List<CubedItemDto>> SearchItemsAsync(string? searchText, string? itemType, List<string>? tags)
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return new List<CubedItemDto>();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                // Build the query string dynamically
+                var sb = new StringBuilder("api/CubedItems/search?");
+                if (!string.IsNullOrWhiteSpace(searchText)) sb.Append($"searchText={Uri.EscapeDataString(searchText)}&");
+                if (!string.IsNullOrWhiteSpace(itemType)) sb.Append($"itemType={Uri.EscapeDataString(itemType)}&");
+                if (tags != null)
+                {
+                    foreach (var tag in tags)
+                    {
+                        sb.Append($"tags={Uri.EscapeDataString(tag)}&");
+                    }
+                }
+
+                var response = await _httpClient.GetAsync(sb.ToString()).ConfigureAwait(false);
+                if (response.IsSuccessStatusCode)
+                {
+                    return await response.Content.ReadFromJsonAsync<List<CubedItemDto>>().ConfigureAwait(false);
+                }
+                return new List<CubedItemDto>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error searching items: {ex.Message}");
+                return new List<CubedItemDto>();
+            }
+        }
+
+        public async Task<List<string>> GetTagSuggestionsAsync(string prefix)
+        {
+            try
+            {
+                // No need for a token if the endpoint is authorized, as it's added below.
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return new List<string>();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var suggestions = await _httpClient.GetFromJsonAsync<List<string>>($"api/Tags/suggest?prefix={Uri.EscapeDataString(prefix)}")
+                                                   .ConfigureAwait(false);
+                return suggestions ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error getting tag suggestions: {ex.Message}");
+                return new List<string>();
+            }
+        }
     }
 }

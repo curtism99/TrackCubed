@@ -9,10 +9,60 @@
               Title="{Binding Title}"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-    <Grid RowDefinitions="*, Auto">
 
+    <!-- Three rows: Filters (Auto), List (*), Button (Auto) -->
+    <Grid RowDefinitions="Auto, *, Auto">
+
+        <!-- Change Grid to have a row for controls -->
+        <!-- Row 0: Search and Filter Controls -->
+        <VerticalStackLayout Grid.Row="0" Padding="10" Spacing="5">
+            <SearchBar Placeholder="Search text fields..."
+                   Text="{Binding SearchText}" />
+            <Picker Title="Filter by Type"
+                ItemsSource="{Binding ItemTypeFilterOptions}"
+                SelectedItem="{Binding SelectedItemTypeFilter}" />
+
+
+            <!-- Input for adding a new tag filter -->
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                <Entry Grid.Column="0" 
+                   Placeholder="Add a tag to filter"
+                   Text="{Binding TagSearchText}" 
+                   ReturnCommand="{Binding AddTagFilterCommand}"/>
+                <Button Grid.Column="1" 
+                    Text="Filter Tag" 
+                    Command="{Binding AddTagFilterCommand}" />
+            </Grid>
+
+            <!-- Display area for currently applied tag filters -->
+            <FlexLayout BindableLayout.ItemsSource="{Binding AppliedTags}" 
+                    Wrap="Wrap" 
+                    Margin="0,5,0,0">
+                <BindableLayout.ItemTemplate>
+                    <DataTemplate x:DataType="{x:Type x:String}">
+                        <Frame Padding="10,5" Margin="0,0,5,5" CornerRadius="15" 
+                           BackgroundColor="{StaticResource Secondary}">
+                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                <Label Grid.Column="0" Text="{Binding .}" 
+                                   TextColor="{StaticResource Primary}" 
+                                   VerticalOptions="Center"/>
+                                <Button Grid.Column="1" Text="X" FontSize="10" 
+                                    TextColor="{StaticResource Primary}"
+                                    BackgroundColor="Transparent"
+                                    BorderWidth="0"
+                                    Padding="0" HeightRequest="20" WidthRequest="20"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=RemoveTagFilterCommand}"
+                                    CommandParameter="{Binding .}"/>
+                            </Grid>
+                        </Frame>
+                    </DataTemplate>
+                </BindableLayout.ItemTemplate>
+            </FlexLayout>
+
+
+        </VerticalStackLayout>
         <!-- The RefreshView wraps the list and provides pull-to-refresh -->
-        <RefreshView Grid.Row="0"
+        <RefreshView Grid.Row="1"
                      Command="{Binding LoadItemsCommand}"
                      IsRefreshing="{Binding LoadItemsCommand.IsRunning}">
             <CollectionView ItemsSource="{Binding Items}"
@@ -75,7 +125,7 @@
             </CollectionView>
         </RefreshView>
 
-        <Button Grid.Row="1" 
+        <Button Grid.Row="2" 
                 Text="Add New Item" 
                 Command="{Binding AddNewItemCommand}"
                 Margin="20" />
