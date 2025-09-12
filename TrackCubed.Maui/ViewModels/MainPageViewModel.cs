@@ -95,5 +95,40 @@ namespace TrackCubed.Maui.ViewModels
             await _authService.SignOutAsync();
             AppShell.OnLoginStateChanged?.Invoke();
         }
+
+        [RelayCommand]
+        private async Task DeleteCubedItemAsync(CubedItemDto itemToDelete)
+        {
+            if (itemToDelete == null) return;
+
+            // CRITICAL UX: Always ask for confirmation before a destructive action.
+            bool confirmed = await Shell.Current.DisplayAlert(
+                "Delete Item",
+                $"Are you sure you want to delete '{itemToDelete.Name}'?",
+                "Yes, Delete",
+                "No, Cancel");
+
+            if (!confirmed) return;
+
+            // If confirmed, proceed with deletion.
+            bool success = await _cubedDataService.DeleteCubedItemAsync(itemToDelete.Id);
+
+            if (success)
+            {
+                // If the API call was successful, remove the item from the list on the screen.
+                MainThread.BeginInvokeOnMainThread(() =>
+                {
+                    Items.Remove(itemToDelete);
+                });
+            }
+            else
+            {
+                // If it failed, inform the user.
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to delete the item. Please try again.", "OK");
+                });
+            }
+        }
     }
 }

@@ -108,5 +108,27 @@ namespace TrackCubed.Maui.Services
                 return null;
             }
         }
+
+        public async Task<bool> DeleteCubedItemAsync(Guid id)
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return false;
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                // Use the DeleteAsync method and pass the ID in the URL.
+                var response = await _httpClient.DeleteAsync($"api/CubedItems/{id}").ConfigureAwait(false);
+
+                // IsSuccessStatusCode will be true for 204 No Content.
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception deleting CubedItem: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

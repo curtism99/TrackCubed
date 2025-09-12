@@ -21,14 +21,24 @@
                     <DataTemplate x:DataType="dtos:CubedItemDto">
                         <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
                                BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
-                            <VerticalStackLayout Spacing="5">
-                                <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
-                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                                <Label Text="{Binding Description}" FontSize="Small" 
-                                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-                                <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
-                                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-                            </VerticalStackLayout>
+                            <!-- We use a Grid to position the details and the button -->
+                            <Grid ColumnDefinitions="*, Auto">
+                                <VerticalStackLayout Spacing="5">
+                                    <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
+                                           TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                                    <Label Text="{Binding Description}" FontSize="Small" 
+                                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                                    <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
+                                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                                </VerticalStackLayout>
+                                <!-- Column 1: The delete button -->
+                                <Button Grid.Column="1" 
+                                Text="Delete" 
+                                VerticalOptions="Center"
+                                BackgroundColor="Red"
+                                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
+                                CommandParameter="{Binding .}"/>
+                            </Grid>
                         </Frame>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>

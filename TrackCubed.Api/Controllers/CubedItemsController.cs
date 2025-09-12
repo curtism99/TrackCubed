@@ -108,5 +108,39 @@ namespace TrackCubed.Api.Controllers
             // Return the DTO
             return CreatedAtAction(nameof(GetMyCubedItems), new { id = createdItemDto.Id }, createdItemDto);
         }
+
+
+        // DELETE: api/CubedItems/1234-5678-9012-3456
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteCubedItem(Guid id)
+        {
+            // 1. Get the current user from the token.
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            // 2. Find the item to delete.
+            // CRITICAL SECURITY CHECK: We must ensure the item exists AND belongs to the current user.
+            // This prevents a user from deleting another user's items by guessing a Guid.
+            var itemToDelete = await _context.CubedItems
+                                             .FirstOrDefaultAsync(c => c.Id == id && c.CreatedById == user.Id);
+
+            // 3. If the item doesn't exist or doesn't belong to the user, return NotFound.
+            if (itemToDelete == null)
+            {
+                return NotFound("Item not found or you do not have permission to delete it.");
+            }
+
+            // 4. Remove the item and save changes.
+            _context.CubedItems.Remove(itemToDelete);
+            await _context.SaveChangesAsync();
+
+            // 5. Return a "204 No Content" response, which is the standard for a successful DELETE.
+            return NoContent();
+        }
     }
 }
