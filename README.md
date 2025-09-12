@@ -1,6 +1,6 @@
-# TrackCubed
+# Track³
 
-TrackCubed is a cross-platform mobile application built with .NET MAUI that allows users to save and organize various digital items—such as links, images, songs, or documents—as "Cubed Items." Each item can be categorized, tagged, described, and easily searched for later.
+Track³ (Track Cubed) is a cross-platform mobile application built with .NET MAUI that allows users to save and organize various digital items—such as links, images, songs, or documents—as "Cubed Items" or "Cubes". Each item can be categorized, tagged, described, and easily searched for later.
 
 The application is powered by a secure ASP.NET Core Web API backend connected to an Azure SQL database, with user authentication handled by Microsoft Entra ID.
 
