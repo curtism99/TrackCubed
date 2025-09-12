@@ -1,13 +1,18 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.14.36414.22 d17.14
+VisualStudioVersion = 17.14.36414.22
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrackCubed.Api", "TrackCubed.Api\TrackCubed.Api.csproj", "{7A335628-6AE5-42BC-B604-3A592D8F5B70}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrackCubed.Maui", "TrackCubed.Maui\TrackCubed.Maui.csproj", "{028A20B6-3582-4539-9138-01C0C654401A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TrackCubed.Shared", "TrackCubed.Shared\TrackCubed.Shared.csproj", "{C57C9013-12EC-4A70-882E-895FBBEE13E0}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{8EC462FD-D22E-90A8-E5CE-7E832BA40C5D}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -24,6 +29,7 @@ Global
 		{028A20B6-3582-4539-9138-01C0C654401A}.Debug|Any CPU.Deploy.0 = Debug|Any CPU
 		{028A20B6-3582-4539-9138-01C0C654401A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{028A20B6-3582-4539-9138-01C0C654401A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{028A20B6-3582-4539-9138-01C0C654401A}.Release|Any CPU.Deploy.0 = Release|Any CPU
 		{C57C9013-12EC-4A70-882E-895FBBEE13E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{C57C9013-12EC-4A70-882E-895FBBEE13E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C57C9013-12EC-4A70-882E-895FBBEE13E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
