@@ -45,6 +45,10 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private string _customItemType;
 
+        // This allows us to add items to it after it's been created.
+        [ObservableProperty]
+        private ObservableCollection<string> _predefinedItemTypes;
+
         // Form properties
         [ObservableProperty] private Guid _itemId;
         [ObservableProperty] private string _name;
@@ -55,12 +59,6 @@ namespace TrackCubed.Maui.ViewModels
 
         // Add other properties for other fields as needed
 
-        // A list of predefined item types to populate the Picker.
-        public List<string> PredefinedItemTypes { get; } = new List<string>
-        {
-            "Link", "Image", "Song", "Video", "Journal Entry", "Document", "Other"
-        };
-
         [ObservableProperty]
         private string _selectedItemType;
 
@@ -70,7 +68,7 @@ namespace TrackCubed.Maui.ViewModels
             PageTitle = "Add New Item"; // Default title
             SaveButtonText = "Create"; // Default text for "Add Mode"
             Tags = new ObservableCollection<string>(); // Initialize the collection
-            SelectedItemType = PredefinedItemTypes.FirstOrDefault();
+            PredefinedItemTypes = new ObservableCollection<string>();
         }
 
         [RelayCommand]
@@ -126,45 +124,15 @@ namespace TrackCubed.Maui.ViewModels
             await Shell.Current.GoToAsync("..");
         }
 
-        // This method is automatically called by MAUI's navigation system
-        // when the ItemToEdit property is set.
+        // The only job of this method is now to set the flag and page title.
+        // It does NOT try to apply data, because the data isn't ready yet.
         partial void OnItemToEditChanged(CubedItemDto value)
         {
-            System.Diagnostics.Debug.WriteLine($"[AddCubedItemViewModel] OnItemToEditChanged called. Item is {(value == null ? "NULL" : "NOT NULL")}");
-
             if (value != null)
             {
                 _isEditMode = true;
                 PageTitle = "Edit Item";
-                SaveButtonText = "Update"; 
-                // Populate the form fields with the item's data
-                ItemId = value.Id;
-                Name = value.Name;
-                Link = value.Link;
-                Description = value.Description;
-                Notes = value.Notes;
-                // If the item's type is in our predefined list, select it.
-                // If not, it's a custom type, so we add it to the list and select it.
-                if (!string.IsNullOrEmpty(value.ItemType))
-                {
-                    // If the item's type is one of our predefined ones, just select it.
-                    if (PredefinedItemTypes.Contains(value.ItemType))
-                    {
-                        SelectedItemType = value.ItemType;
-                    }
-                    else // Otherwise, it's a custom type from the database.
-                    {
-                        SelectedItemType = "Other"; // Select "Other" in the Picker...
-                        CustomItemType = value.ItemType; // ...and populate the custom Entry field.
-                    }
-                }
-
-                // Load the tags from the DTO into the ObservableCollection
-                Tags.Clear();
-                foreach (var tag in value.Tags)
-                {
-                    Tags.Add(tag);
-                }
+                SaveButtonText = "Update";
             }
         }
 
@@ -198,5 +166,53 @@ namespace TrackCubed.Maui.ViewModels
         {
             IsCustomTypeEntryVisible = value == "Other";
         }
+
+        // This method is now responsible for ALL data loading and setup.
+        [RelayCommand]
+        private async Task LoadDataAsync()
+        {
+            // 1. Fetch the list of types from the API.
+            var types = await _dataService.GetPredefinedItemTypesAsync();
+            PredefinedItemTypes.Clear();
+            foreach (var type in types)
+            {
+                PredefinedItemTypes.Add(type);
+            }
+
+            // 2. NOW, check if we are in Edit Mode.
+            if (_isEditMode && ItemToEdit != null)
+            {
+                // 3. Populate ALL the form fields at once.
+                ItemId = ItemToEdit.Id;
+                Name = ItemToEdit.Name;
+                Link = ItemToEdit.Link;
+                Description = ItemToEdit.Description;
+                Notes = ItemToEdit.Notes;
+
+                // 4. This is the critical logic to set the Picker correctly.
+                if (!string.IsNullOrEmpty(ItemToEdit.ItemType))
+                {
+                    // If the item's type is a custom one (not in our official list)...
+                    if (!PredefinedItemTypes.Contains(ItemToEdit.ItemType))
+                    {
+                        // ...temporarily add it to the collection so it can be selected.
+                        PredefinedItemTypes.Insert(0, ItemToEdit.ItemType);
+                        SelectedItemType = ItemToEdit.ItemType;
+                        CustomItemType = ItemToEdit.ItemType;
+                    }
+                    else
+                    {
+                        // Otherwise, just select it from the existing list.
+                        SelectedItemType = ItemToEdit.ItemType;
+                    }
+                }
+            }
+            else // We are in Add Mode
+            {
+                // Set the default selection for a new item.
+                SelectedItemType = PredefinedItemTypes.FirstOrDefault();
+            }
+        }
+
     }
 }

@@ -21,6 +21,7 @@ namespace TrackCubed.Api.Data
 
         public DbSet<CubedItem> CubedItems { get; set; }
         public DbSet<Tag> Tags { get; set; }
+        public DbSet<ItemType> ItemTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -37,6 +38,18 @@ namespace TrackCubed.Api.Data
             modelBuilder.Entity<Tag>()
                 .HasIndex(t => t.Name)
                 .IsUnique();
+
+            // --- ADD THIS SEEDING LOGIC ---
+            // This will pre-populate the ItemTypes table with a default list.
+            modelBuilder.Entity<ItemType>().HasData(
+                new ItemType { Id = 1, Name = "Link" },
+                new ItemType { Id = 2, Name = "Image" },
+                new ItemType { Id = 3, Name = "Song" },
+                new ItemType { Id = 4, Name = "Video" },
+                new ItemType { Id = 5, Name = "Journal Entry" },
+                new ItemType { Id = 6, Name = "Document" },
+                new ItemType { Id = 7, Name = "Other" }
+            );
         }
     }
 }

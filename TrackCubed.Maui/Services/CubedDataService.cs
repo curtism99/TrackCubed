@@ -152,5 +152,25 @@ namespace TrackCubed.Maui.Services
                 return false;
             }
         }
+
+        public async Task<List<string>> GetPredefinedItemTypesAsync()
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return new List<string>();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var types = await _httpClient.GetFromJsonAsync<List<string>>("api/ItemTypes").ConfigureAwait(false);
+
+                return types ?? new List<string>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error fetching ItemTypes: {ex.Message}");
+                return new List<string> { "Link", "Other" }; // Fallback list on error
+            }
+        }
     }
 }
