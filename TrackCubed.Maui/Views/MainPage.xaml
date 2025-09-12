@@ -37,6 +37,12 @@
                                            TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
                                     <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
                                            TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                                    <Label Text="{Binding ItemType, StringFormat='Type: {0}'}"
+                                           FontSize="Micro"
+                                           FontAttributes="Italic"
+                                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                                           Margin="0,5,0,0" />
+
                                 </VerticalStackLayout>
                                 <!-- Row 0, Column 1: The delete button -->
                                 <Button Grid.Row="0" Grid.Column="1" 

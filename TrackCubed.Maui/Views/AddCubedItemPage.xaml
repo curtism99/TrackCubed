@@ -19,6 +19,16 @@
             <Label Text="Notes" />
             <Editor Text="{Binding Notes}" Placeholder="Personal notes about this item..." AutoSize="TextChanges" HeightRequest="150"/>
 
+            <Label Text="Item Type" Margin="0,15,0,0" />
+            <Picker ItemsSource="{Binding PredefinedItemTypes}"
+                SelectedItem="{Binding SelectedItemType}" />
+
+            <Entry Placeholder="Enter custom type"
+               Text="{Binding CustomItemType}"
+               IsVisible="{Binding IsCustomTypeEntryVisible}"
+               Margin="0,5,0,0" />
+
+
             <Label Text="Tags" Margin="0,15,0,0"/>
 
             <!-- A horizontal layout for adding new tags -->

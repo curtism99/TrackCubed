@@ -37,6 +37,14 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private string _newTagText;
 
+        // This property is bound to the visibility of the custom Entry field
+        [ObservableProperty]
+        private bool _isCustomTypeEntryVisible;
+
+        // This property is bound to the text of the custom Entry field
+        [ObservableProperty]
+        private string _customItemType;
+
         // Form properties
         [ObservableProperty] private Guid _itemId;
         [ObservableProperty] private string _name;
@@ -47,17 +55,34 @@ namespace TrackCubed.Maui.ViewModels
 
         // Add other properties for other fields as needed
 
+        // A list of predefined item types to populate the Picker.
+        public List<string> PredefinedItemTypes { get; } = new List<string>
+        {
+            "Link", "Image", "Song", "Video", "Journal Entry", "Document", "Other"
+        };
+
+        [ObservableProperty]
+        private string _selectedItemType;
+
         public AddCubedItemViewModel(CubedDataService dataService)
         {
             _dataService = dataService;
             PageTitle = "Add New Item"; // Default title
             SaveButtonText = "Create"; // Default text for "Add Mode"
             Tags = new ObservableCollection<string>(); // Initialize the collection
+            SelectedItemType = PredefinedItemTypes.FirstOrDefault();
         }
 
         [RelayCommand]
         private async Task SaveAsync()
         {
+            string finalItemType = SelectedItemType;
+            if (SelectedItemType == "Other" && !string.IsNullOrWhiteSpace(CustomItemType))
+            {
+                finalItemType = CustomItemType;
+            }
+
+
             if (_isEditMode)
             {
                 var updatedDto = new CubedItemDto
@@ -66,7 +91,7 @@ namespace TrackCubed.Maui.ViewModels
                     Name = this.Name,
                     Link = this.Link,
                     Description = this.Description,
-                    ItemType = this.ItemType,
+                    ItemType = finalItemType, // Use the final Item type
                     Notes = this.Notes,
                     // Convert the ObservableCollection back to a simple List for the DTO
                     Tags = new List<string>(this.Tags)
@@ -82,7 +107,7 @@ namespace TrackCubed.Maui.ViewModels
                     Link = this.Link,
                     Description = this.Description,
                     Notes = this.Notes,
-                    ItemType = CubedItemType.Link,
+                    ItemType = finalItemType, // Use the final Item type
                     // Convert the ObservableCollection back to a simple List for the DTO
                     Tags = new List<string>(this.Tags)
                 };
@@ -117,8 +142,22 @@ namespace TrackCubed.Maui.ViewModels
                 Name = value.Name;
                 Link = value.Link;
                 Description = value.Description;
-                ItemType = value.ItemType;
                 Notes = value.Notes;
+                // If the item's type is in our predefined list, select it.
+                // If not, it's a custom type, so we add it to the list and select it.
+                if (!string.IsNullOrEmpty(value.ItemType))
+                {
+                    // If the item's type is one of our predefined ones, just select it.
+                    if (PredefinedItemTypes.Contains(value.ItemType))
+                    {
+                        SelectedItemType = value.ItemType;
+                    }
+                    else // Otherwise, it's a custom type from the database.
+                    {
+                        SelectedItemType = "Other"; // Select "Other" in the Picker...
+                        CustomItemType = value.ItemType; // ...and populate the custom Entry field.
+                    }
+                }
 
                 // Load the tags from the DTO into the ObservableCollection
                 Tags.Clear();
@@ -153,5 +192,11 @@ namespace TrackCubed.Maui.ViewModels
             }
         }
 
+        // This method is automatically called when the SelectedItemType property changes
+        // This is where we will control the visibility of the custom entry field.
+        partial void OnSelectedItemTypeChanged(string value)
+        {
+            IsCustomTypeEntryVisible = value == "Other";
+        }
     }
 }
