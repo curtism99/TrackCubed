@@ -6,6 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using TrackCubed.Maui.Configs;
+using System.Security.Claims;
 
 namespace TrackCubed.Maui.Services
 {
@@ -89,9 +90,9 @@ namespace TrackCubed.Maui.Services
                 var accounts = await _pca.GetAccountsAsync();
                 if (accounts.Any())
                 {
+                    // Assign the result to our private field so GetCurrentUser works after a silent sign-in
                     _authResult = await _pca.AcquireTokenSilent(EntraIdConstants.Scopes, accounts.FirstOrDefault())
-                                            .ExecuteAsync().ConfigureAwait(false);
-                    
+                                            .ExecuteAsync();
                     return _authResult?.AccessToken;
                 }
             }
@@ -194,6 +195,21 @@ namespace TrackCubed.Maui.Services
             {
                 await _pca.RemoveAsync(account).ConfigureAwait(false);
             }
+        }
+
+        public (string Name, string Email) GetCurrentUser()
+        {
+            // _authResult is the AuthenticationResult from the last successful sign-in
+            if (_authResult?.ClaimsPrincipal == null)
+            {
+                return ("Not signed in", string.Empty);
+            }
+
+            // Extract the user's name and preferred username (email) from the claims principal
+            var name = _authResult.ClaimsPrincipal.FindFirst("name")?.Value ?? "N/A";
+            var email = _authResult.ClaimsPrincipal.FindFirst("preferred_username")?.Value ?? "N/A";
+
+            return (name, email);
         }
     }
 }

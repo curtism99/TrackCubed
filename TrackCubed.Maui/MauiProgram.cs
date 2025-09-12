@@ -42,11 +42,13 @@ namespace TrackCubed.Maui
             builder.Services.AddTransient<LoginPageViewModel>();
             builder.Services.AddTransient<MainPageViewModel>();
             builder.Services.AddTransient<AddCubedItemViewModel>();
+            builder.Services.AddTransient<ProfilePageViewModel>();
 
             // Register Pages
             builder.Services.AddTransient<LoginPage>();
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<AddCubedItemPage>();
+            builder.Services.AddTransient<ProfilePage>();
 
             return builder.Build();
         }
