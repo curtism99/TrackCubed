@@ -6,7 +6,8 @@
              xmlns:viewmodel="clr-namespace:TrackCubed.Maui.ViewModels"
              x:DataType="viewmodel:MainPageViewModel"
              x:Class="TrackCubed.Maui.Views.MainPage"
-              Title="{Binding Title}">
+              Title="{Binding Title}"
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
     <Grid RowDefinitions="*, Auto">
 
@@ -18,11 +19,15 @@
                             VerticalOptions="Fill">
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="dtos:CubedItemDto">
-                        <Frame Padding="15" Margin="10" CornerRadius="8" BorderColor="LightGray">
+                        <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
+                               BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
                             <VerticalStackLayout Spacing="5">
-                                <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" />
-                                <Label Text="{Binding Description}" FontSize="Small" TextColor="Gray" />
-                                <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" />
+                                <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
+                                       TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                                <Label Text="{Binding Description}" FontSize="Small" 
+                                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                                <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
+                                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
                             </VerticalStackLayout>
                         </Frame>
                     </DataTemplate>
