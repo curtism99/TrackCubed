@@ -71,8 +71,6 @@ namespace TrackCubed.Maui.ViewModels
         public AddCubedItemViewModel(CubedDataService dataService)
         {
             _dataService = dataService;
-            PageTitle = "Add New Item"; // Default title
-            SaveButtonText = "Create"; // Default text for "Add Mode"
             Tags = new ObservableCollection<string>(); // Initialize the collection
             PredefinedItemTypes = new ObservableCollection<string>();
             Tags = new ObservableCollection<string>();
@@ -166,8 +164,8 @@ namespace TrackCubed.Maui.ViewModels
         private async Task InitializePageAsync()
         {
             // Always default to Add mode first
-            PageTitle = "Add New Item";
-            SaveButtonText = "Create";
+            PageTitle = "✎ Add New Cubed Item";
+            SaveButtonText = "+ Create";
 
             var types = await _dataService.GetPredefinedItemTypesAsync();
             PredefinedItemTypes.Clear();
@@ -179,8 +177,8 @@ namespace TrackCubed.Maui.ViewModels
             if (ItemToEdit != null)
             {
                 _isEditMode = true;
-                PageTitle = "Edit Item";
-                SaveButtonText = "Update";
+                PageTitle = "✎ Edit Cubed Item";
+                SaveButtonText = "✎ Update";
 
                 ItemId = ItemToEdit.Id;
                 Name = ItemToEdit.Name;

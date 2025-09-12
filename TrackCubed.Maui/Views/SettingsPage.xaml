@@ -5,45 +5,68 @@
              x:Class="TrackCubed.Maui.Views.SettingsPage"
              x:DataType="viewmodel:SettingsPageViewModel"
              Title="{Binding Title}"
-             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
+             BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}"
+             Shell.NavBarIsVisible="False">
 
-    <ScrollView>
-        <VerticalStackLayout Spacing="25" Padding="20">
 
-            <!-- User Information Section -->
-            <VerticalStackLayout Spacing="10">
-                <Label Text="SIGNED IN AS" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                <Label Text="{Binding DisplayName}" FontSize="Title" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                <Label Text="{Binding Email}" FontSize="Large" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-            </VerticalStackLayout>
+    <!-- This is the top-level container for the page -->
+    <Grid RowDefinitions="Auto, *" RowSpacing="0">
 
-            <!-- Settings Section -->
-            <VerticalStackLayout Spacing="10">
-                <Label Text="SETTINGS" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                    <Label Grid.Column="0" Text="App Theme" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                    <Picker Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
-                </Grid>
-            </VerticalStackLayout>
+        <!-- ===== ROW 0: CUSTOM TITLE BAR (Pasted from MainPage) ===== -->
+        <Grid Grid.Row="0" Padding="10" BackgroundColor="{StaticResource Primary}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
 
-            <!-- About Section -->
-            <VerticalStackLayout Spacing="10">
-                <Label Text="About Track³" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
-                    <Label.FormattedText>
-                        <FormattedString>
-                            <Span Text="Privacy Policy"/>
-                        </FormattedString>
-                    </Label.FormattedText>
-                    <Label.GestureRecognizers>
-                        <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}"/>
-                    </Label.GestureRecognizers>
-                </Label>
-            </VerticalStackLayout>
+            <Image Grid.Column="0" Source="logo_transparent.png" HeightRequest="30" WidthRequest="30" VerticalOptions="Center"/>
 
-            <!-- Sign Out Button -->
-            <Button Grid.Row="1"
+            <!-- This title correctly binds to the ViewModel's 'Title' property -->
+            <Label Grid.Column="1" Text="Track³ | Settings" TextColor="White" FontSize="Title" FontAttributes="Bold" VerticalOptions="Center" Margin="10,0,0,0" />
+            <Button Grid.Column="2" Text="Sign Out" Command="{Binding SignOutCommand}" BackgroundColor="Transparent" TextColor="White" BorderWidth="0" VerticalOptions="Center" />
+
+        </Grid>
+
+
+        <!-- ===== ROW 1: MAIN SETTINGS CONTENT (Your existing ScrollView) ===== -->
+        <ScrollView Grid.Row="1">
+            <VerticalStackLayout Spacing="25" Padding="20">
+
+                <!-- User Information Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="SIGNED IN AS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                    <Label Text="{Binding DisplayName}" FontSize="Title" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                    <Label Text="{Binding Email}" FontSize="Large" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                </VerticalStackLayout>
+
+                <!-- Settings Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="SETTINGS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <Label Grid.Column="0" Text="App Theme" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                        <Picker Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
+                    </Grid>
+                </VerticalStackLayout>
+
+                <!-- About Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="ABOUT Track³" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                    <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                    <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
+                        <Label.FormattedText>
+                            <FormattedString>
+                                <Span Text="Privacy Policy"/>
+                            </FormattedString>
+                        </Label.FormattedText>
+                        <Label.GestureRecognizers>
+                            <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}"/>
+                        </Label.GestureRecognizers>
+                    </Label>
+                </VerticalStackLayout>
+
+                <!-- Sign Out Button -->
+                <Button Grid.Row="1"
                 Text="Sign Out"
                 Command="{Binding SignOutCommand}"
                 BackgroundColor="Red"
@@ -51,7 +74,7 @@
                 VerticalOptions="End"
                 Margin="0,0,0,20"/>
 
-        </VerticalStackLayout>
-    </ScrollView>
-
+            </VerticalStackLayout>
+        </ScrollView>
+    </Grid>
 </ContentPage>

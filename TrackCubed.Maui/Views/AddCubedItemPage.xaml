@@ -37,7 +37,7 @@
            Text="{Binding NewTagText}"
            Placeholder="Enter a tag and press add" />
                 <Button Grid.Column="1" 
-            Text="Add" 
+            Text="+ Add" 
             Command="{Binding AddTagCommand}"
                     CommandParameter="{Binding NewTagText}" />
             </Grid>

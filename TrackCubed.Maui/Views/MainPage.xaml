@@ -6,159 +6,182 @@
              xmlns:viewmodel="clr-namespace:TrackCubed.Maui.ViewModels"
              x:DataType="viewmodel:MainPageViewModel"
              x:Class="TrackCubed.Maui.Views.MainPage"
+             Shell.NavBarIsVisible="False" 
               Title="{Binding Title}"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
 
-    <!-- Three rows: Filters (Auto), List (*), Button (Auto) -->
-    <Grid RowDefinitions="Auto, *, Auto">
+    <!-- This is the single, top-level layout container -->
+    <Grid RowDefinitions="Auto, *" RowSpacing="0">
 
-        <!-- Change Grid to have a row for controls -->
-        <!-- Row 0: Search and Filter Controls -->
-        <VerticalStackLayout Grid.Row="0" Padding="10" Spacing="5">
-            <SearchBar Placeholder="Search text fields..."
+        <!-- ===== ROW 0: CUSTOM TITLE BAR ===== -->
+        <Grid Grid.Row="0" Padding="10" BackgroundColor="{StaticResource Primary}">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+
+            <Image Grid.Column="0" Source="logo_transparent.png" HeightRequest="30" WidthRequest="30" VerticalOptions="Center"/>
+            <Label Grid.Column="1" Text="Track³ | My Cubes" TextColor="White" FontSize="Title" FontAttributes="Bold" VerticalOptions="Center" Margin="10,0,0,0" />
+            <Button Grid.Column="2" Text="Sign Out" Command="{Binding SignOutCommand}" BackgroundColor="Transparent" TextColor="White" BorderWidth="0" VerticalOptions="Center" />
+        </Grid>
+
+        <!-- ===== ROW 1: MAIN PAGE CONTENT (Filters and List) ===== -->
+        <Grid Grid.Row="1" RowDefinitions="Auto, *">
+            <!-- Row 0: Search and Filter Controls -->
+            <VerticalStackLayout Grid.Row="0" Padding="10" Spacing="5">
+                <SearchBar Placeholder="Search text fields..."
                    Text="{Binding SearchText}" />
-            <Picker Title="Filter by Type"
+                <Picker Title="Filter by Type"
                 ItemsSource="{Binding ItemTypeFilterOptions}"
                 SelectedItem="{Binding SelectedItemTypeFilter}" />
 
 
-            <!-- Input for adding a new tag filter -->
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                <Entry Grid.Column="0" 
+                <!-- Input for adding a new tag filter -->
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                    <Entry Grid.Column="0" 
                    Placeholder="Add a tag to filter"
                    Text="{Binding TagSearchText}" />
-                <Button Grid.Column="1" 
-                    Text="Filter Tag" 
+                    <Button Grid.Column="1" 
+                    Text="+ Filter Tag" 
                     Command="{Binding AddTagFilterCommand}" 
                     CommandParameter="{Binding TagSearchText}"/>
-            </Grid>
+                </Grid>
 
-            <!-- START: NEW UI FOR TAG SUGGESTIONS  -->
+                <!-- START: NEW UI FOR TAG SUGGESTIONS  -->
 
-            <!-- This CollectionView will only appear when there are suggestions -->
-            <CollectionView ItemsSource="{Binding TagSuggestions}"
+                <!-- This CollectionView will only appear when there are suggestions -->
+                <CollectionView ItemsSource="{Binding TagSuggestions}"
                 IsVisible="{Binding TagSuggestions.Count, Converter={StaticResource CountToBoolConverter}}"
                 SelectionMode="Single"
                 Margin="0, -5, 0, 5">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="{x:Type x:String}">
-                        <Frame Padding="10, 8" Margin="0" BorderColor="LightGray" CornerRadius="0"
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="{x:Type x:String}">
+                            <Frame Padding="10, 8" Margin="0" BorderColor="LightGray" CornerRadius="0"
                    BackgroundColor="{AppThemeBinding Light={StaticResource PopupBackgroundColorLight}, Dark={StaticResource PopupBackgroundColorDark}}">
-                            <Label Text="{Binding .}" 
+                                <Label Text="{Binding .}" 
                        TextColor="{AppThemeBinding Light={StaticResource PopupTextColorLight}, Dark={StaticResource PopupTextColorDark}}"/>
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer 
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer 
                         Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=AddTagFilterCommand}"
                         CommandParameter="{Binding .}"/>
-                            </Frame.GestureRecognizers>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-            
-            <!-- START: NEW UI FOR TAG SEARCH MODE -->
-            <HorizontalStackLayout Spacing="10" Margin="0,10,0,0" VerticalOptions="Center">
-                <Switch IsToggled="{Binding IsExclusiveTagSearch}" />
-                <Label Text="Match ALL of the selected tags (exclusive)" 
-           VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <!-- END: NEW UI FOR TAG SEARCH MODE -->
+                                </Frame.GestureRecognizers>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
 
-            <!-- Display area for currently applied tag filters -->
-            <FlexLayout BindableLayout.ItemsSource="{Binding AppliedTags}" 
+                <!-- START: NEW UI FOR TAG SEARCH MODE -->
+                <HorizontalStackLayout Spacing="10" Margin="0,10,0,0" VerticalOptions="Center">
+                    <Switch IsToggled="{Binding IsExclusiveTagSearch}" />
+                    <Label Text="Match ALL of the selected tags (exclusive)" 
+           VerticalOptions="Center" />
+                </HorizontalStackLayout>
+                <!-- END: NEW UI FOR TAG SEARCH MODE -->
+
+                <!-- Display area for currently applied tag filters -->
+                <FlexLayout BindableLayout.ItemsSource="{Binding AppliedTags}" 
                     Wrap="Wrap" 
                     Margin="0,5,0,0">
-                <BindableLayout.ItemTemplate>
-                    <DataTemplate x:DataType="{x:Type x:String}">
-                        <Frame Padding="10,5" Margin="0,0,5,5" CornerRadius="15" 
+                    <BindableLayout.ItemTemplate>
+                        <DataTemplate x:DataType="{x:Type x:String}">
+                            <Frame Padding="10,5" Margin="0,0,5,5" CornerRadius="15" 
                            BackgroundColor="{StaticResource Secondary}">
-                            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
-                                <Label Grid.Column="0" Text="{Binding .}" 
+                                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="10">
+                                    <Label Grid.Column="0" Text="{Binding .}" 
                                    TextColor="{StaticResource Primary}" 
                                    VerticalOptions="Center"/>
-                                <Button Grid.Column="1" Text="X" FontSize="10" 
+                                    <Button Grid.Column="1" Text="X" FontSize="10" 
                                     TextColor="{StaticResource Primary}"
                                     BackgroundColor="Transparent"
                                     BorderWidth="0"
                                     Padding="0" HeightRequest="20" WidthRequest="20"
                                     Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=RemoveTagFilterCommand}"
                                     CommandParameter="{Binding .}"/>
-                            </Grid>
-                        </Frame>
-                    </DataTemplate>
-                </BindableLayout.ItemTemplate>
-            </FlexLayout>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </BindableLayout.ItemTemplate>
+                </FlexLayout>
 
 
-        </VerticalStackLayout>
-        <!-- The RefreshView wraps the list and provides pull-to-refresh -->
-        <RefreshView Grid.Row="1"
+            </VerticalStackLayout>
+            <!-- Row 1: The list -->
+            <!-- The RefreshView wraps the list and provides pull-to-refresh -->
+            <RefreshView Grid.Row="1"
                      Command="{Binding LoadItemsCommand}"
                      IsRefreshing="{Binding LoadItemsCommand.IsRunning}">
-            <CollectionView ItemsSource="{Binding Items}"
+                <CollectionView ItemsSource="{Binding Items}"
                             VerticalOptions="Fill">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="dtos:CubedItemDto">
-                        <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="dtos:CubedItemDto">
+                            <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
                                BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer 
+                                <Frame.GestureRecognizers>
+                                    <TapGestureRecognizer 
                             Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
                             CommandParameter="{Binding .}"/>
-                            </Frame.GestureRecognizers>
-                            
-                            <!-- We use a Grid to position the details and the button -->
-                            <Grid RowDefinitions="Auto, Auto, *, Auto" ColumnDefinitions="*, Auto" RowSpacing="5">
-                                <!-- Row 0, Column 0: The item details -->
-                                <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
-                                    <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
+                                </Frame.GestureRecognizers>
+
+                                <!-- We use a Grid to position the details and the button -->
+                                <Grid RowDefinitions="Auto, Auto, *, Auto" ColumnDefinitions="*, Auto" RowSpacing="5">
+                                    <!-- Row 0, Column 0: The item details -->
+                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
+                                        <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
                                            TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                                    <Label Text="{Binding Description}" FontSize="Small" 
+                                        <Label Text="{Binding Description}" FontSize="Small" 
                                            TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-                                    <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
+                                        <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
                                            TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-                                    <Label Text="{Binding ItemType, StringFormat='Type: {0}'}"
+                                        <Label Text="{Binding ItemType, StringFormat='Type: {0}'}"
                                            FontSize="Micro"
                                            FontAttributes="Italic"
                                            TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
                                            Margin="0,5,0,0" />
 
-                                </VerticalStackLayout>
-                                <!-- Row 0, Column 1: The delete button -->
-                                <Button Grid.Row="0" Grid.Column="1" 
-                                Text="Delete" 
+                                    </VerticalStackLayout>
+                                    <!-- Row 0, Column 1: The delete button -->
+                                    <Button Grid.Row="0" Grid.Column="1" 
+                                Text="✖ Delete" 
                                 VerticalOptions="Start"
                                 BackgroundColor="Red"
                                 Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
                                 CommandParameter="{Binding .}"/>
 
-                                <!-- Row 1, Column 0 (spans both columns): The tags -->
-                                <FlexLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
+                                    <!-- Row 1, Column 0 (spans both columns): The tags -->
+                                    <FlexLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
                                     BindableLayout.ItemsSource="{Binding Tags}"
                                     Wrap="Wrap"
                                     Margin="0,10,0,0">
-                                    <BindableLayout.ItemTemplate>
-                                        <DataTemplate x:DataType="{x:Type x:String}">
-                                            <Frame Padding="8,4" Margin="0,0,5,5" CornerRadius="10" 
+                                        <BindableLayout.ItemTemplate>
+                                            <DataTemplate x:DataType="{x:Type x:String}">
+                                                <Frame Padding="8,4" Margin="0,0,5,5" CornerRadius="10" 
                                            BackgroundColor="{StaticResource Secondary}">
-                                                <Label Text="{Binding .}" 
+                                                    <Label Text="{Binding .}" 
                                                TextColor="{StaticResource Primary}" 
                                                FontSize="10"/>
-                                            </Frame>
-                                        </DataTemplate>
-                                    </BindableLayout.ItemTemplate>
-                                </FlexLayout>
-                            </Grid>
-                        </Frame>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </RefreshView>
+                                                </Frame>
+                                            </DataTemplate>
+                                        </BindableLayout.ItemTemplate>
+                                    </FlexLayout>
+                                </Grid>
+                            </Frame>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </RefreshView>
 
-        <Button Grid.Row="2" 
-                Text="Add New Item" 
-                Command="{Binding AddNewItemCommand}"
-                Margin="20" />
+            <!-- Floating Action Button for "Add" -->
+            <Button Text="+" 
+                    Command="{Binding AddNewItemCommand}"
+                    HorizontalOptions="End" 
+                    VerticalOptions="End" 
+                    Margin="20"
+                    HeightRequest="50"
+                    WidthRequest="50"
+                    CornerRadius="25"
+                    Grid.Row="1" />
+        </Grid>
     </Grid>
 </ContentPage>
