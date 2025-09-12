@@ -12,6 +12,7 @@ namespace TrackCubed.Maui.ViewModels
     public partial class SettingsPageViewModel : ObservableObject
     {
         private readonly AuthService _authService;
+        private readonly ThemeService _themeService;
 
         [ObservableProperty]
         private string _displayName;
@@ -19,15 +20,31 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private string _email;
 
-        public SettingsPageViewModel(AuthService authService)
-        {
-            _authService = authService;
-            Title = "Profile & Settings";
-        }
-
         [ObservableProperty]
         private string _title;
 
+        // Property for "About" section
+        [ObservableProperty] private string _appVersion;
+
+        // Properties for Theme Selector
+        public List<string> ThemeOptions { get; } = new List<string> { "System", "Light", "Dark" };
+
+        [ObservableProperty]    
+        private string _selectedTheme;
+
+
+        public SettingsPageViewModel(AuthService authService, ThemeService themeService)
+        {
+            _authService = authService;
+            _themeService = themeService;
+            Title = "Settings";
+            AppVersion = AppInfo.Current.VersionString;
+
+            // Load the saved theme when the ViewModel is created
+            SelectedTheme = _themeService.LoadTheme();
+        }
+
+ 
         // Command to load the user's data when the page appears
         [RelayCommand]
         private void LoadUserInformation()
@@ -53,5 +70,28 @@ namespace TrackCubed.Maui.ViewModels
                 AppShell.OnLoginStateChanged?.Invoke();
             }
         }
+
+        // This method automatically runs when the Picker selection changes
+        partial void OnSelectedThemeChanged(string value)
+        {
+            if (!string.IsNullOrEmpty(value))
+            {
+                _themeService.SetTheme(value);
+            }
+        }
+
+        [RelayCommand]
+        private async Task OpenPrivacyPolicyAsync()
+        {
+            try
+            {
+                await Browser.Default.OpenAsync("https://www.trackcubed.com/privacy", BrowserLaunchMode.SystemPreferred);
+            }
+            catch (Exception)
+            {
+                await Shell.Current.DisplayAlert("Error", "Could not open browser.", "OK");
+            }
+        }
+
     }
 }

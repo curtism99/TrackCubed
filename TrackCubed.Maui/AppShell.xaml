@@ -24,13 +24,13 @@
     <TabBar x:Name="MainAppTabs" IsVisible="False">
         <ShellContent
             Title="Home"
-            Icon="home.png"
+            Icon="home.svg"
             ContentTemplate="{DataTemplate views:MainPage}"
             Route="MainPage" />
 
         <ShellContent
         Title="Settings"
-        Icon="user.png"
+        Icon="settings_account_box.svg"
         ContentTemplate="{DataTemplate views:SettingsPage}"
         Route="SettingsPage" />
         

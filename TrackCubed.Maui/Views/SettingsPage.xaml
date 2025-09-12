@@ -2,39 +2,56 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:viewmodel="clr-namespace:TrackCubed.Maui.ViewModels"
-             x:DataType="viewmodel:SettingsPageViewModel"
              x:Class="TrackCubed.Maui.Views.SettingsPage"
+             x:DataType="viewmodel:SettingsPageViewModel"
              Title="{Binding Title}"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-    <Grid RowDefinitions="*, Auto" Padding="20">
+    <ScrollView>
+        <VerticalStackLayout Spacing="25" Padding="20">
 
-        <!-- User Information Section -->
-        <VerticalStackLayout Grid.Row="0" Spacing="10" VerticalOptions="Start">
-            <Label Text="Display Name" 
-                   FontSize="Caption" 
-                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-            <Label Text="{Binding DisplayName}" 
-                   FontSize="Title" 
-                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+            <!-- User Information Section -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="SIGNED IN AS" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                <Label Text="{Binding DisplayName}" FontSize="Title" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                <Label Text="{Binding Email}" FontSize="Large" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+            </VerticalStackLayout>
 
-            <Label Text="Email"
-                   FontSize="Caption"
-                   Margin="0,20,0,0"
-                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-            <Label Text="{Binding Email}" 
-                   FontSize="Large" 
-                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-        </VerticalStackLayout>
+            <!-- Settings Section -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="SETTINGS" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                    <Label Grid.Column="0" Text="App Theme" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                    <Picker Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
+                </Grid>
+            </VerticalStackLayout>
 
-        <!-- Sign Out Button -->
-        <Button Grid.Row="1"
+            <!-- About Section -->
+            <VerticalStackLayout Spacing="10">
+                <Label Text="ABOUT" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
+                    <Label.FormattedText>
+                        <FormattedString>
+                            <Span Text="Privacy Policy"/>
+                        </FormattedString>
+                    </Label.FormattedText>
+                    <Label.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}"/>
+                    </Label.GestureRecognizers>
+                </Label>
+            </VerticalStackLayout>
+
+            <!-- Sign Out Button -->
+            <Button Grid.Row="1"
                 Text="Sign Out"
                 Command="{Binding SignOutCommand}"
                 BackgroundColor="Red"
                 TextColor="White"
                 VerticalOptions="End"
                 Margin="0,0,0,20"/>
-    </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
 
 </ContentPage>
