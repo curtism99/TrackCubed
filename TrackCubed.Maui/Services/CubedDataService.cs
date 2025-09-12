@@ -37,21 +37,22 @@ namespace TrackCubed.Maui.Services
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
                 // Let's get the raw response first to see what the server is sending
-                var response = await _httpClient.GetAsync("api/CubedItems");
+                // The GetAsync() and ReadFromJsonAsync() calls do not need the UI thread.
+                var response = await _httpClient.GetAsync("api/CubedItems").ConfigureAwait(false);
 
                 if (response.IsSuccessStatusCode)
                 {
-                    var jsonString = await response.Content.ReadAsStringAsync();
+                    var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     System.Diagnostics.Debug.WriteLine($"[GetMyCubedItemsAsync] Success! Received JSON: {jsonString}");
 
                     // Now, try to deserialize
-                    var items = await response.Content.ReadFromJsonAsync<List<CubedItemDto>>();
+                    var items = await response.Content.ReadFromJsonAsync<List<CubedItemDto>>().ConfigureAwait(false);
                     System.Diagnostics.Debug.WriteLine($"[GetMyCubedItemsAsync] Deserialized {items?.Count ?? 0} items.");
                     return items ?? new List<CubedItemDto>();
                 }
                 else
                 {
-                    var errorContent = await response.Content.ReadAsStringAsync();
+                    var errorContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                     System.Diagnostics.Debug.WriteLine($"[GetMyCubedItemsAsync] Failed with status {response.StatusCode}: {errorContent}");
                     return new List<CubedItemDto>();
                 }
@@ -67,12 +68,12 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync();
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return null;
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
-                var response = await _httpClient.PostAsJsonAsync("api/CubedItems", itemToAdd);
+                var response = await _httpClient.PostAsJsonAsync("api/CubedItems", itemToAdd).ConfigureAwait(false);
 
                 // --- START: IMPROVED ERROR HANDLING ---
 
@@ -83,7 +84,7 @@ namespace TrackCubed.Maui.Services
                     {
                         // The API returns the created item, so we deserialize it.
                         // This is the line that might be failing silently.
-                        var createdItemDto = await response.Content.ReadFromJsonAsync<CubedItemDto>(); 
+                        var createdItemDto = await response.Content.ReadFromJsonAsync<CubedItemDto>().ConfigureAwait(false); 
                         return createdItemDto;
                     }
                     catch (JsonException ex)
@@ -95,7 +96,7 @@ namespace TrackCubed.Maui.Services
                 }
 
                 // If the code is not 201, it's an error.
-                var errorContent = await response.Content.ReadAsStringAsync();
+                var errorContent = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 System.Diagnostics.Debug.WriteLine($"API returned an error ({response.StatusCode}): {errorContent}");
                 return null;
 

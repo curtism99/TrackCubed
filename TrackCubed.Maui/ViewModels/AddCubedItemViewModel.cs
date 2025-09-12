@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TrackCubed.Maui.Messages;
 using TrackCubed.Maui.Services;
 using TrackCubed.Shared.DTOs;
 using TrackCubed.Shared.Models;
@@ -53,6 +55,10 @@ namespace TrackCubed.Maui.ViewModels
 
             if (createdItem != null)
             {
+                // Send a message to any listening page that the items need to be refreshed.
+                WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
+
+                // Go back to the main page.
                 await Shell.Current.GoToAsync("..");
             }
             else
