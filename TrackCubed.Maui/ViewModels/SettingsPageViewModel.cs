@@ -9,7 +9,7 @@ using TrackCubed.Maui.Services;
 
 namespace TrackCubed.Maui.ViewModels
 {
-    public partial class ProfilePageViewModel : ObservableObject
+    public partial class SettingsPageViewModel : ObservableObject
     {
         private readonly AuthService _authService;
 
@@ -19,7 +19,7 @@ namespace TrackCubed.Maui.ViewModels
         [ObservableProperty]
         private string _email;
 
-        public ProfilePageViewModel(AuthService authService)
+        public SettingsPageViewModel(AuthService authService)
         {
             _authService = authService;
             Title = "Profile & Settings";

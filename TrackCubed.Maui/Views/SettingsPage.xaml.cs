@@ -2,9 +2,9 @@ using TrackCubed.Maui.ViewModels;
 
 namespace TrackCubed.Maui.Views;
 
-public partial class ProfilePage : ContentPage
+public partial class SettingsPage : ContentPage
 {
-	public ProfilePage(ProfilePageViewModel viewModel)
+	public SettingsPage(SettingsPageViewModel viewModel)
 	{
 		InitializeComponent();
 		BindingContext = viewModel;
@@ -14,7 +14,7 @@ public partial class ProfilePage : ContentPage
     {
         base.OnAppearing();
         // When the page appears, execute the command to load the user's info
-        if (BindingContext is ProfilePageViewModel vm && vm.LoadUserInformationCommand.CanExecute(null))
+        if (BindingContext is SettingsPageViewModel vm && vm.LoadUserInformationCommand.CanExecute(null))
         {
             vm.LoadUserInformationCommand.Execute(null);
         }
