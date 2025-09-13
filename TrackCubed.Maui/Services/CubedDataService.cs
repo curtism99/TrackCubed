@@ -230,5 +230,25 @@ namespace TrackCubed.Maui.Services
                 return new List<string>();
             }
         }
+
+        public async Task<bool> WipeAllUserDataAsync()
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return false;
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.DeleteAsync("api/User/wipe-data").ConfigureAwait(false);
+
+                return response.IsSuccessStatusCode;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception wiping user data: {ex.Message}");
+                return false;
+            }
+        }
     }
 }

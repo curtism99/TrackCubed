@@ -1,10 +1,12 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using TrackCubed.Maui.Messages;
 using TrackCubed.Maui.Services;
 
 namespace TrackCubed.Maui.ViewModels
@@ -13,15 +15,14 @@ namespace TrackCubed.Maui.ViewModels
     {
         private readonly AuthService _authService;
         private readonly ThemeService _themeService;
+        private readonly CubedDataService _cubedDataService;
+        private readonly WordBankService _wordBankService;
 
         [ObservableProperty]
         private string _displayName;
 
         [ObservableProperty]
         private string _email;
-
-        [ObservableProperty]
-        private string _title;
 
         // Property for "About" section
         [ObservableProperty] private string _appVersion;
@@ -33,11 +34,13 @@ namespace TrackCubed.Maui.ViewModels
         private string _selectedTheme;
 
 
-        public SettingsPageViewModel(AuthService authService, ThemeService themeService)
+        public SettingsPageViewModel(AuthService authService, ThemeService themeService, CubedDataService cubedDataService, WordBankService wordBankService)
         {
             _authService = authService;
             _themeService = themeService;
-            Title = "Settings";
+            _cubedDataService = cubedDataService;
+            _wordBankService = wordBankService;
+
             AppVersion = AppInfo.Current.VersionString;
 
             // Load the saved theme when the ViewModel is created
@@ -91,6 +94,48 @@ namespace TrackCubed.Maui.ViewModels
             {
                 await Shell.Current.DisplayAlert("Error", "Could not open browser.", "OK");
             }
+        }
+
+        [RelayCommand]
+        private async Task WipeAllDataAsync()
+        {
+            // 1. Generate a unique, hyphenated phrase from our new service.
+            // This makes it impossible for the user to just muscle-memory their way through.
+            string confirmationPhrase = _wordBankService.GetRandomPhrase();
+
+            // 2. Show a special prompt dialog that includes a text entry field.
+            string result = await Shell.Current.DisplayPromptAsync(
+                "EXTREME DANGER: Wipe All Data?",
+                $"This action is irreversible and will delete all of your Cubed Items and Tags. Please type '{confirmationPhrase}' to confirm.",
+                "Confirm Wipe",
+                "Cancel",
+                placeholder: "Type confirmation phrase here");
+
+            // 3. Check if the user's input matches the phrase.
+            if (result != null && result.Equals(confirmationPhrase, StringComparison.Ordinal))
+            {
+                // 4. If it matches, call the data service.
+                bool success = await _cubedDataService.WipeAllUserDataAsync();
+
+                //bool success = true; // TEMPORARY: Remove this line when enabling the actual wipe.
+
+
+                if (success)
+                {
+                    await Shell.Current.DisplayAlert("Success", "All your data has been wiped.", "OK");
+                    // Notify the MainPage to refresh its (now empty) list.
+                    WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
+                }
+                else
+                {
+                    await Shell.Current.DisplayAlert("Error", "Failed to wipe data. Please try again.", "OK");
+                }
+            }
+            else if (result != null) // User typed something, but it was wrong.
+            {
+                await Shell.Current.DisplayAlert("Cancelled", "The confirmation phrase did not match. No data was deleted.", "OK");
+            }
+            // If result is null, the user hit "Cancel". Do nothing.
         }
 
     }

@@ -55,5 +55,34 @@ namespace TrackCubed.Api.Controllers
 
             return Ok(user); // User already exists, return their profile
         }
+
+        // DELETE: api/User/wipe-data
+
+        [HttpDelete("wipe-data")]
+        public async Task<IActionResult> WipeUserData()
+        {
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null) return Unauthorized();
+
+            // 1. Delete links from join table
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE cit FROM CubedItemTag cit INNER JOIN CubedItems ci ON cit.CubedItemsId = ci.Id WHERE ci.CreatedById = {user.Id}");
+
+            // 2. Delete CubedItems
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM CubedItems WHERE CreatedById = {user.Id}");
+
+            // 3. Delete user-owned Tags
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM Tags WHERE UserId = {user.Id}");
+
+            // 4. Delete user-owned custom ItemTypes
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM UserItemTypes WHERE UserId = {user.Id}");
+
+            return Ok(new { Message = "All user data has been wiped successfully." });
+        }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TrackCubed.Api.Data;
 
 namespace TrackCubed.Api.Controllers
@@ -21,12 +22,20 @@ namespace TrackCubed.Api.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<string>>> GetItemTypes()
         {
-            var itemTypeNames = await _context.ItemTypes
-                                              .OrderBy(t => t.Name)
-                                              .Select(t => t.Name)
-                                              .ToListAsync();
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null) return Unauthorized();
 
-            return Ok(itemTypeNames);
+            // 1. Get the untouchable system types
+            var systemTypes = await _context.SystemItemTypes.Select(t => t.Name).ToListAsync();
+            // 2. Get this user's custom types
+            var userTypes = await _context.UserItemTypes.Where(t => t.UserId == user.Id).Select(t => t.Name).ToListAsync();
+
+            // 3. Combine, order, and return the list
+            var allTypes = systemTypes.Concat(userTypes).OrderBy(name => name).Distinct().ToList();
+
+            return Ok(allTypes);
         }
     }
 }

@@ -11,7 +11,7 @@
 
     <!-- This is the top-level container for the page -->
     <Grid RowDefinitions="Auto, *" RowSpacing="0">
-
+        
         <!-- ===== ROW 0: CUSTOM TITLE BAR (Pasted from MainPage) ===== -->
         <Grid Grid.Row="0" Padding="10" BackgroundColor="{StaticResource Primary}">
             <Grid.ColumnDefinitions>
@@ -29,52 +29,65 @@
         </Grid>
 
 
-        <!-- ===== ROW 1: MAIN SETTINGS CONTENT (Your existing ScrollView) ===== -->
-        <ScrollView Grid.Row="1">
-            <VerticalStackLayout Spacing="25" Padding="20">
+        <!-- ===== ROW 1: THE PAGE CONTENT (SCROLLABLE PART + FIXED DANGER ZONE) ===== -->
+        <Grid Grid.Row="1" RowDefinitions="*, Auto">
+            <ScrollView Grid.Row="0">
+                <VerticalStackLayout Spacing="25" Padding="20">
 
-                <!-- User Information Section -->
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="SIGNED IN AS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                    <Label Text="{Binding DisplayName}" FontSize="Title" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                    <Label Text="{Binding Email}" FontSize="Large" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                    <!-- User Information Section -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="SIGNED IN AS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                        <Label Text="{Binding DisplayName}" FontSize="Title" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                        <Label Text="{Binding Email}" FontSize="Large" TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                    </VerticalStackLayout>
+
+                    <!-- Settings Section -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="SETTINGS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                            <Label Grid.Column="0" Text="App Theme" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                            <Picker Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
+                        </Grid>
+                    </VerticalStackLayout>
+
+                    <!-- About Section -->
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="ABOUT Track³" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+                        <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                        <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
+                            <Label.FormattedText>
+                                <FormattedString>
+                                    <Span Text="Privacy Policy"/>
+                                </FormattedString>
+                            </Label.FormattedText>
+                            <Label.GestureRecognizers>
+                                <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}"/>
+                            </Label.GestureRecognizers>
+                        </Label>
+                    </VerticalStackLayout>
                 </VerticalStackLayout>
+            </ScrollView>
 
-                <!-- Settings Section -->
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="SETTINGS" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
-                        <Label Grid.Column="0" Text="App Theme" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                        <Picker Grid.Column="1" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding SelectedTheme}" />
-                    </Grid>
-                </VerticalStackLayout>
 
-                <!-- About Section -->
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="ABOUT Track³" FontAttributes="Bold" FontSize="Header" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
-                    <Label Text="{Binding AppVersion, StringFormat='Version: {0}'}" TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
-                    <Label TextColor="{StaticResource Primary}" TextDecorations="Underline">
-                        <Label.FormattedText>
-                            <FormattedString>
-                                <Span Text="Privacy Policy"/>
-                            </FormattedString>
-                        </Label.FormattedText>
-                        <Label.GestureRecognizers>
-                            <TapGestureRecognizer Command="{Binding OpenPrivacyPolicyCommand}"/>
-                        </Label.GestureRecognizers>
-                    </Label>
-                </VerticalStackLayout>
-
-                <!-- Sign Out Button -->
-                <Button Grid.Row="1"
-                Text="Sign Out"
-                Command="{Binding SignOutCommand}"
-                BackgroundColor="Red"
-                TextColor="White"
-                VerticalOptions="End"
-                Margin="0,0,0,20"/>
-
+            <!-- START: NEW "DANGER ZONE" STUCK TO THE BOTTOM  -->
+            <VerticalStackLayout Grid.Row="1" Spacing="10" Padding="20" VerticalOptions="End">
+                <!-- The "DANGER ZONE" Header -->
+                <Label Text="☠ DANGER ZONE ☠︎"
+                       FontAttributes="Bold"
+                       TextColor="Red"
+                       HorizontalOptions="Center"
+                       FontSize="Medium" />
+                
+                <Frame BorderColor="Red" Padding="3" CornerRadius="5" Margin="0,20,0,0">
+                        <Button Text="✖ Wipe All My Data... ✖"
+                        Command="{Binding WipeAllDataCommand}"
+                        BackgroundColor="Red"
+                        TextColor="White"
+                        FontAttributes="Bold"
+                        BorderWidth="0" />
+                    </Frame>
+                    <!-- END: NEW DANGER ZONE SECTION -->
             </VerticalStackLayout>
-        </ScrollView>
+        </Grid>
     </Grid>
 </ContentPage>

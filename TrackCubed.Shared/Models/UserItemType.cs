@@ -8,25 +8,19 @@ using System.Threading.Tasks;
 
 namespace TrackCubed.Shared.Models
 {
-    public class Tag
+    public class UserItemType
     {
-        [Key]
+        [Key] 
         public int Id { get; set; }
 
         [Required]
-        [MaxLength(50)]
+        [MaxLength(50)] 
         public string Name { get; set; }
 
-        [Required]
+        [Required] 
         public int UserId { get; set; }
 
-        [ForeignKey(nameof(UserId))]
+        [ForeignKey(nameof(UserId))] 
         public ApplicationUser User { get; set; }
-
-        /// <summary>
-        /// The collection of CubedItems associated with this tag.
-        /// This is the other side of the many-to-many relationship.
-        /// </summary>
-        public ICollection<CubedItem> CubedItems { get; set; } = new List<CubedItem>();
     }
 }

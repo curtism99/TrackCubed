@@ -20,5 +20,10 @@ namespace TrackCubed.Shared.Models
         /// This is the "one" side of the one-to-many relationship.
         /// </summary>
         public ICollection<CubedItem> CubedItems { get; set; } = new List<CubedItem>();
+
+        // The collection of tags created by this user.
+        public ICollection<Tag> Tags { get; set; } = new List<Tag>();
+
+        public ICollection<UserItemType> CustomItemTypes { get; set; } = new List<UserItemType>();
     }
 }

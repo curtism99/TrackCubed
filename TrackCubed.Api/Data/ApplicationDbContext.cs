@@ -21,34 +21,63 @@ namespace TrackCubed.Api.Data
 
         public DbSet<CubedItem> CubedItems { get; set; }
         public DbSet<Tag> Tags { get; set; }
-        public DbSet<ItemType> ItemTypes { get; set; }
+        public DbSet<SystemItemType> SystemItemTypes { get; set; }
+        public DbSet<UserItemType> UserItemTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // Configure the one-to-many relationship between User and CubedItem
+            // --- RELATIONSHIPS ---
+            // By convention, EF Core should figure out the relationships. The issue is purely with cascade deletes.
+            // Let's explicitly state the one that is causing the problem.
+
+            // An ApplicationUser has many CubedItems. When the user is deleted, delete their items.
+            // This will cascade to the CubedItemTag table correctly.
             modelBuilder.Entity<ApplicationUser>()
                 .HasMany(u => u.CubedItems)
                 .WithOne(c => c.CreatedBy)
-                .HasForeignKey(c => c.CreatedById)
-                .OnDelete(DeleteBehavior.Cascade); // If a user is deleted, delete their items
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // Configure a unique index on Tag.Name to prevent duplicate tags
-            modelBuilder.Entity<Tag>()
-                .HasIndex(t => t.Name)
-                .IsUnique();
+            // A User has many Tags. THIS is the conflicting cascade path. SQL Server doesn't
+            // know if it should delete the CubedItemTag records because the User deleted the Tag,
+            // or because the User deleted the CubedItem. We must disable one.
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(u => u.Tags)
+                .WithOne(t => t.User)
+                .OnDelete(DeleteBehavior.Restrict); // This tells SQL "Do not delete a user if they still have tags"
 
-            // --- ADD THIS SEEDING LOGIC ---
-            // This will pre-populate the ItemTypes table with a default list.
-            modelBuilder.Entity<ItemType>().HasData(
-                new ItemType { Id = 1, Name = "Link" },
-                new ItemType { Id = 2, Name = "Image" },
-                new ItemType { Id = 3, Name = "Song" },
-                new ItemType { Id = 4, Name = "Video" },
-                new ItemType { Id = 5, Name = "Journal Entry" },
-                new ItemType { Id = 6, Name = "Document" },
-                new ItemType { Id = 7, Name = "Other" }
+            // A User has many CustomItemTypes. This is a simple relationship with no cycles.
+            modelBuilder.Entity<ApplicationUser>()
+               .HasMany(u => u.CustomItemTypes)
+               .WithOne(uit => uit.User)
+               .OnDelete(DeleteBehavior.Cascade);
+
+            // Manually configure the join table
+            modelBuilder.Entity<CubedItem>()
+                .HasMany(c => c.Tags)
+                .WithMany(t => t.CubedItems)
+                .UsingEntity("CubedItemTag",
+                    l => l.HasOne(typeof(Tag)).WithMany().HasForeignKey("TagsId").OnDelete(DeleteBehavior.Cascade),
+                    r => r.HasOne(typeof(CubedItem)).WithMany().HasForeignKey("CubedItemsId").OnDelete(DeleteBehavior.NoAction),
+                    j => j.HasKey("CubedItemsId", "TagsId"));
+
+            // --- INDEX CONFIGURATIONS ---
+            modelBuilder.Entity<Tag>().HasIndex(t => new { t.UserId, t.Name }).IsUnique();
+            modelBuilder.Entity<UserItemType>().HasIndex(uit => new { uit.UserId, uit.Name }).IsUnique();
+
+            // --- SEED DATA ---
+            modelBuilder.Entity<SystemItemType>().HasData(
+                new SystemItemType { Id = 1, Name = "Link" },
+                new SystemItemType { Id = 2, Name = "Image" },
+                new SystemItemType { Id = 3, Name = "Song" },
+                new SystemItemType { Id = 4, Name = "Video" },
+                new SystemItemType { Id = 5, Name = "Journal Entry" },
+                new SystemItemType { Id = 6, Name = "Document" },
+                new SystemItemType { Id = 7, Name = "Other" }
+            );
+            modelBuilder.Entity<Tag>().HasData(
+               new { Id = 1, Name = "dummy", UserId = 1 }
             );
         }
     }

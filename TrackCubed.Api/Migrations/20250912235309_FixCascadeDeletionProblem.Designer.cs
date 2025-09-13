@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using TrackCubed.Api.Data;
 
@@ -11,9 +12,11 @@ using TrackCubed.Api.Data;
 namespace TrackCubed.Api.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20250912235309_FixCascadeDeletionProblem")]
+    partial class FixCascadeDeletionProblem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -34,7 +37,7 @@ namespace TrackCubed.Api.Migrations
 
                     b.HasIndex("TagsId");
 
-                    b.ToTable("CubedItemTag");
+                    b.ToTable("CubedItemTag", (string)null);
                 });
 
             modelBuilder.Entity("TrackCubed.Shared.Models.ApplicationUser", b =>
@@ -112,7 +115,7 @@ namespace TrackCubed.Api.Migrations
                     b.ToTable("CubedItems");
                 });
 
-            modelBuilder.Entity("TrackCubed.Shared.Models.SystemItemType", b =>
+            modelBuilder.Entity("TrackCubed.Shared.Models.ItemType", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -127,7 +130,7 @@ namespace TrackCubed.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("SystemItemTypes");
+                    b.ToTable("ItemTypes");
 
                     b.HasData(
                         new
@@ -189,38 +192,6 @@ namespace TrackCubed.Api.Migrations
                         .IsUnique();
 
                     b.ToTable("Tags");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = 1,
-                            Name = "dummy",
-                            UserId = 1
-                        });
-                });
-
-            modelBuilder.Entity("TrackCubed.Shared.Models.UserItemType", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("UserId")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("UserId", "Name")
-                        .IsUnique();
-
-                    b.ToTable("UserItemTypes");
                 });
 
             modelBuilder.Entity("CubedItemTag", b =>
@@ -254,17 +225,6 @@ namespace TrackCubed.Api.Migrations
                     b.HasOne("TrackCubed.Shared.Models.ApplicationUser", "User")
                         .WithMany("Tags")
                         .HasForeignKey("UserId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("User");
-                });
-
-            modelBuilder.Entity("TrackCubed.Shared.Models.UserItemType", b =>
-                {
-                    b.HasOne("TrackCubed.Shared.Models.ApplicationUser", "User")
-                        .WithMany("CustomItemTypes")
-                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -274,8 +234,6 @@ namespace TrackCubed.Api.Migrations
             modelBuilder.Entity("TrackCubed.Shared.Models.ApplicationUser", b =>
                 {
                     b.Navigation("CubedItems");
-
-                    b.Navigation("CustomItemTypes");
 
                     b.Navigation("Tags");
                 });

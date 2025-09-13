@@ -75,6 +75,9 @@ namespace TrackCubed.Api.Controllers
             {
                 return Unauthorized("User profile not found.");
             }
+            
+            // Instead of just accepting the string, process it to see if a new custom type needs to be created.
+            var finalItemType = await ProcessItemType(itemDto.ItemType, user.Id);
 
             // Manually map from the DTO to the full CubedItem entity
             var newCubedItem = new CubedItem
@@ -84,7 +87,7 @@ namespace TrackCubed.Api.Controllers
                 Link = itemDto.Link,
                 Description = itemDto.Description,
                 Notes = itemDto.Notes,
-                ItemType = itemDto.ItemType,
+                ItemType = finalItemType,
 
                 // Properties set by the server (cannot be set by the client)
                 Id = Guid.NewGuid(),
@@ -148,7 +151,7 @@ namespace TrackCubed.Api.Controllers
             return NoContent();
         }
 
-        // PUT: api/CubedItems/1234-5678-9012-3456
+        // PUT: api/CubedItems/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCubedItem(Guid id, CubedItemDto itemDto)
         {
@@ -170,19 +173,23 @@ namespace TrackCubed.Api.Controllers
             // 2. Find the existing item in the database.
             // CRITICAL SECURITY CHECK: Ensure the item belongs to the current user.
             var itemToUpdate = await _context.CubedItems
+                                             .Include(i => i.Tags) // Eager load tags
                                              .FirstOrDefaultAsync(c => c.Id == id && c.CreatedById == user.Id);
-
             if (itemToUpdate == null)
             {
                 return NotFound("Item not found or you do not have permission to edit it.");
             }
+
+            // Process the incoming ItemType to handle potential new custom types.
+            var finalItemType = await ProcessItemType(itemDto.ItemType, user.Id);
+
 
             // 3. Update properties from the DTO
             itemToUpdate.Name = itemDto.Name;
             itemToUpdate.Link = itemDto.Link;
             itemToUpdate.Description = itemDto.Description;
             itemToUpdate.Notes = itemDto.Notes;
-            itemToUpdate.ItemType = itemDto.ItemType;
+            itemToUpdate.ItemType = finalItemType;
             itemToUpdate.DateLastAccessed = DateTime.UtcNow;
             // Note: We do NOT update CreatedOn or CreatedById.
 
@@ -205,19 +212,24 @@ namespace TrackCubed.Api.Controllers
 
             if (tagNames == null || !tagNames.Any()) return;
 
+            // Get the UserID from the item. We need this for all tag lookups.
+            var userId = item.CreatedById;
+
             foreach (var tagName in tagNames.Select(t => t.Trim().ToLower()).Distinct())
             {
                 if (string.IsNullOrWhiteSpace(tagName)) continue;
 
-                // Find an existing tag or create a new one
-                var existingTag = await _context.Tags.FirstOrDefaultAsync(t => t.Name == tagName);
+                // Find an existing tag that matches the name AND belongs to the current user.
+                var existingTag = await _context.Tags
+                                                .FirstOrDefaultAsync(t => t.Name == tagName && t.UserId == userId);
                 if (existingTag != null)
                 {
                     item.Tags.Add(existingTag);
                 }
                 else
                 {
-                    item.Tags.Add(new Tag { Name = tagName });
+                    // This tag is new FOR THIS USER.
+                    item.Tags.Add(new Tag { Name = tagName, UserId = userId });
                 }
             }
         }
@@ -299,6 +311,28 @@ namespace TrackCubed.Api.Controllers
                                      .ToListAsync();
 
             return Ok(results);
+        }
+
+        private async Task<string> ProcessItemType(string itemTypeName, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(itemTypeName)) return "Other";
+
+            // Check if it's a known system type
+            var isSystemType = await _context.SystemItemTypes.AnyAsync(t => t.Name.ToLower() == itemTypeName.ToLower());
+            if (isSystemType) return itemTypeName;
+
+            // If not a system type, check if it's a known user type for this user
+            var userType = await _context.UserItemTypes
+                                         .FirstOrDefaultAsync(t => t.UserId == userId && t.Name.ToLower() == itemTypeName.ToLower());
+
+            // If it's not a known user type, create a new one.
+            if (userType == null)
+            {
+                var newCustomType = new UserItemType { Name = itemTypeName, UserId = userId };
+                _context.UserItemTypes.Add(newCustomType);
+            }
+
+            return itemTypeName;
         }
     }
 }
