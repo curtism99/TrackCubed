@@ -138,5 +138,33 @@ namespace TrackCubed.Maui.ViewModels
             // If result is null, the user hit "Cancel". Do nothing.
         }
 
+        [RelayCommand]
+        private async Task CleanUpOrphanedTagsAsync()
+        {
+            bool confirmed = await Shell.Current.DisplayAlert(
+                "Clean Up Tags",
+                "This will permanently delete any tags that are not currently attached to any of your Cubed Items. This can't be undone. Continue?",
+                "Yes, Clean Up",
+                "Cancel");
+
+            if (!confirmed) return;
+
+            // Call the service and get the count of deleted tags
+            int deletedCount = await _cubedDataService.CleanUpOrphanedTagsAsync();
+
+            if (deletedCount > 0)
+            {
+                await Shell.Current.DisplayAlert("Success", $"Successfully deleted {deletedCount} orphaned tag(s).", "OK");
+            }
+            else if (deletedCount == 0)
+            {
+                await Shell.Current.DisplayAlert("All Clean!", "No orphaned tags were found.", "OK");
+            }
+            else // deletedCount is -1
+            {
+                await Shell.Current.DisplayAlert("Error", "Failed to clean up tags. Please try again.", "OK");
+            }
+        }
+
     }
 }

@@ -65,7 +65,25 @@
                             </Label.GestureRecognizers>
                         </Label>
                     </VerticalStackLayout>
+
+                <!-- START: DATA MANAGEMENT SECTION -->
+                <VerticalStackLayout Spacing="10" Margin="0,20,0,0">
+                    <Label Text="DATA MANAGEMENT" FontAttributes="Bold" FontSize="Caption" TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+
+                    <Button Text="Clean Up Orphaned Tags"
+            Command="{Binding CleanUpOrphanedTagsCommand}"
+            Style="{StaticResource SecondaryButton}" />
+                    <!-- You can create this style for a less prominent look -->
+
+                    <Label Text="Removes any tags you've created that aren't attached to an item."
+           FontSize="Micro"
+           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+           Margin="5,0,0,0"/>
                 </VerticalStackLayout>
+                <!-- END: DATA MANAGEMENT SECTION -->
+                </VerticalStackLayout>
+
+
             </ScrollView>
 
 

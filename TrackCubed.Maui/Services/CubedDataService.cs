@@ -250,5 +250,38 @@ namespace TrackCubed.Maui.Services
                 return false;
             }
         }
+
+        public async Task<int> CleanUpOrphanedTagsAsync()
+        {
+            try
+            {
+                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return -1; // Return -1 to indicate an auth error
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.DeleteAsync("api/Tags/orphaned").ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    // The API returns a JSON object like { "deletedCount": 5 }
+                    // We need to parse this to get the number.
+                    var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var result = JsonDocument.Parse(jsonString).RootElement;
+                    if (result.TryGetProperty("deletedCount", out var countElement))
+                    {
+                        return countElement.GetInt32();
+                    }
+                    return 0; // Success, but couldn't parse the count
+                }
+
+                return -1; // Indicate a failure
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception cleaning up tags: {ex.Message}");
+                return -1; // Indicate a failure
+            }
+        }
     }
 }
