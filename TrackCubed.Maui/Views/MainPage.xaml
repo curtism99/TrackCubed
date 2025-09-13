@@ -14,7 +14,7 @@
     <!-- This is the single, top-level layout container -->
     <Grid RowDefinitions="Auto, *" RowSpacing="0">
 
-        <!-- ===== ROW 0: CUSTOM TITLE BAR ===== -->
+        <!--  ROW 0: CUSTOM TITLE BAR -->
         <Grid Grid.Row="0" Padding="10" BackgroundColor="{StaticResource Primary}">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -115,56 +115,64 @@
                 <CollectionView ItemsSource="{Binding Items}"
                             VerticalOptions="Fill">
                     <CollectionView.ItemTemplate>
+                        <!-- In your DataTemplate for the CollectionView... -->
                         <DataTemplate x:DataType="dtos:CubedItemDto">
                             <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
-                               BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
+           BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
                                 <Frame.GestureRecognizers>
                                     <TapGestureRecognizer 
-                            Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
-                            CommandParameter="{Binding .}"/>
+                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
+                CommandParameter="{Binding .}"/>
                                 </Frame.GestureRecognizers>
 
-                                <!-- We use a Grid to position the details and the button -->
-                                <Grid RowDefinitions="Auto, Auto, *, Auto" ColumnDefinitions="*, Auto" RowSpacing="5">
-                                    <!-- Row 0, Column 0: The item details -->
-                                    <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="5">
-                                        <Label Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
-                                           TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"/>
+                                <!-- Use a Grid as the top-level container to place the delete button -->
+                                <Grid ColumnDefinitions="*, Auto">
+
+                                    <!--START: THE FIX -->
+                                    <!-- Use a VerticalStackLayout for all the details in the first column -->
+                                    <VerticalStackLayout Grid.Column="0" Spacing="5">
+
+                                        <!-- 1. The Title Line: A Grid for horizontal alignment -->
+                                        <Grid ColumnDefinitions="Auto, *" ColumnSpacing="8">
+                                            <Label Grid.Column="0" Text="🧊" FontSize="Subtitle" VerticalOptions="Center" />
+                                            <Label Grid.Column="1" Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
+                           TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"
+                           LineBreakMode="WordWrap" />
+                                        </Grid>
+
+                                        <!-- 2. The rest of the details stack vertically below -->
                                         <Label Text="{Binding Description}" FontSize="Small" 
-                                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
+                       LineBreakMode="WordWrap" />
                                         <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
-                                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
-                                        <Label Text="{Binding ItemType, StringFormat='Type: {0}'}"
-                                           FontSize="Micro"
-                                           FontAttributes="Italic"
-                                           TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
-                                           Margin="0,5,0,0" />
+                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+                                        <Label Text="{Binding ItemType, StringFormat='Type: {0}'}" FontSize="Micro" FontAttributes="Italic" 
+                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
+
+                                        <!-- 3. The Tags layout now sits correctly at the bottom of the stack -->
+                                        <FlexLayout BindableLayout.ItemsSource="{Binding Tags}"
+                            Wrap="Wrap"
+                            Margin="0,10,0,0">
+                                            <BindableLayout.ItemTemplate>
+                                                <DataTemplate x:DataType="{x:Type x:String}">
+                                                    <Frame Padding="8,4" Margin="0,0,5,5" CornerRadius="10" 
+                                   BackgroundColor="{StaticResource Secondary}">
+                                                        <Label Text="{Binding .}" TextColor="{StaticResource Primary}" FontSize="10"/>
+                                                    </Frame>
+                                                </DataTemplate>
+                                            </BindableLayout.ItemTemplate>
+                                        </FlexLayout>
 
                                     </VerticalStackLayout>
-                                    <!-- Row 0, Column 1: The delete button -->
-                                    <Button Grid.Row="0" Grid.Column="1" 
-                                Text="✖ Delete" 
-                                VerticalOptions="Start"
-                                BackgroundColor="Red"
-                                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
-                                CommandParameter="{Binding .}"/>
+                                    <!-- END: THE FIX -->
 
-                                    <!-- Row 1, Column 0 (spans both columns): The tags -->
-                                    <FlexLayout Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2"
-                                    BindableLayout.ItemsSource="{Binding Tags}"
-                                    Wrap="Wrap"
-                                    Margin="0,10,0,0">
-                                        <BindableLayout.ItemTemplate>
-                                            <DataTemplate x:DataType="{x:Type x:String}">
-                                                <Frame Padding="8,4" Margin="0,0,5,5" CornerRadius="10" 
-                                           BackgroundColor="{StaticResource Secondary}">
-                                                    <Label Text="{Binding .}" 
-                                               TextColor="{StaticResource Primary}" 
-                                               FontSize="10"/>
-                                                </Frame>
-                                            </DataTemplate>
-                                        </BindableLayout.ItemTemplate>
-                                    </FlexLayout>
+                                    <!-- The delete button sits in the second column of the main Grid -->
+                                    <Button Grid.Column="1" 
+                    Text="✖ Delete" 
+                    VerticalOptions="Start"
+                    BackgroundColor="Red"
+                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
+                    CommandParameter="{Binding .}"/>
                                 </Grid>
                             </Frame>
                         </DataTemplate>
