@@ -81,11 +81,17 @@ namespace TrackCubed.Maui.ViewModels
         private async Task SaveAsync()
         {
             string finalItemType = SelectedItemType;
-            if (SelectedItemType == "Other" && !string.IsNullOrWhiteSpace(CustomItemType))
+
+            if (SelectedItemType == "Other" && string.IsNullOrWhiteSpace(CustomItemType))
+            {
+                await Shell.Current.DisplayAlert("Validation Error", "Please enter a custom item type when 'Other' is selected.", "OK");
+                return; // Stop the save operation
+            }
+
+            if (SelectedItemType == "Other")
             {
                 finalItemType = CustomItemType;
             }
-
 
             if (_isEditMode)
             {

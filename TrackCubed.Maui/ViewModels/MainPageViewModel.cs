@@ -82,11 +82,23 @@ namespace TrackCubed.Maui.ViewModels
 
             try
             {
+                // Before we send the filter value to the API, we translate it from the
+                // "display" version to the "logic" version.
+                string apiFilterValue = SelectedItemTypeFilter;
+                if (SelectedItemTypeFilter == "All Item Types")
+                {
+                    apiFilterValue = "All";
+                }
+
                 // Translate the boolean from the UI into the string the API expects.
                 string mode = IsExclusiveTagSearch ? "all" : "any";
 
-                // Call the updated search method with the new mode parameter.
-                var loadedItems = await _cubedDataService.SearchItemsAsync(SearchText, SelectedItemTypeFilter, new List<string>(AppliedTags), mode);
+                // We now pass all four arguments to the data service:
+                // 1. SearchText from the search bar.
+                // 2. The translated apiFilterValue.
+                // 3. The list of applied tags.
+                // 4. The translated tagMode.
+                var loadedItems = await _cubedDataService.SearchItemsAsync(SearchText, apiFilterValue, new List<string>(AppliedTags), mode);
 
                 // We must switch back to the main thread to update the UI-bound collection.
                 // This UI update logic remains exactly the same.
@@ -181,23 +193,6 @@ namespace TrackCubed.Maui.ViewModels
         partial void OnSearchTextChanged(string value) => LoadItemsCommand.Execute(null);
         partial void OnSelectedItemTypeFilterChanged(string value) => LoadItemsCommand.Execute(null);
 
-        // We can also load the filter options on startup
-        [RelayCommand]
-        private async Task LoadFilterOptionsAsync()
-        {
-            var types = await _cubedDataService.GetPredefinedItemTypesAsync();
-            MainThread.BeginInvokeOnMainThread(() =>
-            {
-                ItemTypeFilterOptions.Clear();
-                ItemTypeFilterOptions.Add("All"); // Add an "All" option
-                foreach (var type in types)
-                {
-                    ItemTypeFilterOptions.Add(type);
-                }
-                SelectedItemTypeFilter = "All"; // Set the default
-            });
-        }
-
         // The user selects a tag, and we re-run the search
         partial void OnAppliedTagsChanged(ObservableCollection<string> value)
         {
@@ -262,6 +257,37 @@ namespace TrackCubed.Maui.ViewModels
                         TagSuggestions.Add(s);
                     }
                 }
+            });
+        }
+
+        // A new command dedicated to loading the filter options on startup.
+        [RelayCommand]
+        private async Task LoadFilterOptionsAsync()
+        {
+            // 1. Get the full list of types from the service (includes "Other" and custom types)
+            var allTypes = await _cubedDataService.GetPredefinedItemTypesAsync();
+
+            // 2. Filter out the specific word "Other" from the list before we use it.
+            var filteredTypes = allTypes?.Where(t => !t.Equals("Other", StringComparison.OrdinalIgnoreCase));
+
+            MainThread.BeginInvokeOnMainThread(() =>
+            {
+                ItemTypeFilterOptions.Clear();
+                // Add the USER-FRIENDLY text to the list for the Picker
+                ItemTypeFilterOptions.Add("All Item Types");
+
+
+                if (filteredTypes != null)
+                {
+                    // 3. Add only the filtered types to the UI-bound collection.
+                    foreach (var type in filteredTypes)
+                    {
+                        ItemTypeFilterOptions.Add(type);
+                    }
+                }
+
+                // Set the default selection to the user-friendly text
+                SelectedItemTypeFilter = "All Item Types";
             });
         }
     }

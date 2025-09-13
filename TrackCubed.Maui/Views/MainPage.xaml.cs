@@ -17,13 +17,18 @@ namespace TrackCubed.Maui.Views
         protected override async void OnAppearing()
         {
             base.OnAppearing();
-            // Only trigger the load on the very first time the page appears
-            // Although OnAppearing is usually on the UI thread, explicitly dispatching
-            // the command is a safer and more robust pattern.
-            MainThread.BeginInvokeOnMainThread(() =>
+
+            if (_isFirstAppearance)
             {
-                (BindingContext as MainPageViewModel)?.LoadItemsCommand.Execute(null);
-            });
+                _isFirstAppearance = false;
+
+                // Call BOTH commands on the first appearance of the page.
+                // Let them run in parallel for better performance.
+                await Task.WhenAll(
+                    _viewModel.LoadFilterOptionsCommand.ExecuteAsync(null),
+                    _viewModel.LoadItemsCommand.ExecuteAsync(null)
+                );
+            }
         }
     }
 }
