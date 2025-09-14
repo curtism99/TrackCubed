@@ -122,7 +122,6 @@ namespace TrackCubed.Api.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteCubedItem(Guid id)
         {
-            // 1. Get the current user from the token.
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.AsNoTracking()
                                      .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
@@ -131,24 +130,28 @@ namespace TrackCubed.Api.Controllers
                 return Unauthorized();
             }
 
-            // 2. Find the item to delete.
-            // CRITICAL SECURITY CHECK: We must ensure the item exists AND belongs to the current user.
-            // This prevents a user from deleting another user's items by guessing a Guid.
-            var itemToDelete = await _context.CubedItems
-                                             .FirstOrDefaultAsync(c => c.Id == id && c.CreatedById == user.Id);
-
-            // 3. If the item doesn't exist or doesn't belong to the user, return NotFound.
-            if (itemToDelete == null)
+            // 1. First, verify the item exists AND belongs to the user. This is a critical security check.
+            var itemExists = await _context.CubedItems
+                                           .AnyAsync(c => c.Id == id && c.CreatedById == user.Id);
+            if (!itemExists)
             {
                 return NotFound("Item not found or you do not have permission to delete it.");
             }
 
-            // 4. Remove the item and save changes.
-            _context.CubedItems.Remove(itemToDelete);
-            await _context.SaveChangesAsync();
+            // --- The Definitive Deletion Order using Raw SQL ---
 
-            // 5. Return a "204 No Content" response, which is the standard for a successful DELETE.
-            return NoContent();
+            // 2. Manually delete all records from the join table that link to this specific item.
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM CubedItemTag WHERE CubedItemsId = {id}");
+
+            // 3. Now that the links are gone, we can safely delete the item itself.
+            await _context.Database.ExecuteSqlInterpolatedAsync(
+                $"DELETE FROM CubedItems WHERE Id = {id}");
+
+            // Note: We do NOT delete the tags themselves, as they might be used by other items.
+            // The "Clean Up Orphaned Tags" feature will handle that.
+
+            return NoContent(); // Return "204 No Content" for a successful delete.
         }
 
         // PUT: api/CubedItems/{id}
