@@ -16,6 +16,7 @@ namespace TrackCubed.Maui.Services
     {
         private readonly HttpClient _httpClient;
         private readonly AuthService _authService;
+        private const string LastTagCleanupKey = "LastTagCleanup";
 
         public CubedDataService(HttpClient httpClient, AuthService authService)
         {
@@ -281,6 +282,21 @@ namespace TrackCubed.Maui.Services
             {
                 System.Diagnostics.Debug.WriteLine($"Exception cleaning up tags: {ex.Message}");
                 return -1; // Indicate a failure
+            }
+        }
+
+        public async Task CleanUpOrphanedTagsIfNeededAsync()
+        {
+            var lastCleanupTime = Preferences.Get(LastTagCleanupKey, DateTime.MinValue);
+            if ((DateTime.UtcNow - lastCleanupTime).TotalHours > 24)
+            {
+                System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Running...");
+                int deletedCount = await CleanUpOrphanedTagsAsync(); // Your existing method
+                if (deletedCount >= 0)
+                {
+                    Preferences.Set(LastTagCleanupKey, DateTime.UtcNow);
+                    System.Diagnostics.Debug.WriteLine($"[Auto-Cleanup] Success. Deleted {deletedCount} tags.");
+                }
             }
         }
     }

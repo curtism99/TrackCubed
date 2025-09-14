@@ -32,7 +32,6 @@ namespace TrackCubed.Maui
                 };
             });
 
-            builder.Services.AddSingleton<AppShell>();
 
             // Register Services
             builder.Services.AddSingleton<AuthService>();
@@ -51,6 +50,9 @@ namespace TrackCubed.Maui
             builder.Services.AddTransient<MainPage>();
             builder.Services.AddTransient<AddCubedItemPage>();
             builder.Services.AddTransient<SettingsPage>();
+
+            builder.Services.AddSingleton<AppShell>();
+
 
             return builder.Build();
         }

@@ -9,7 +9,7 @@ namespace TrackCubed.Maui
         public static Action OnLoginStateChanged;
         private bool _isInitialCheckComplete = false;
         private readonly AuthService _authService;
-        public AppShell(AuthService authService)
+        public AppShell(AuthService authService, CubedDataService dataService)
         {
             InitializeComponent();
             _authService = authService;
@@ -20,6 +20,7 @@ namespace TrackCubed.Maui
 
             // Register routes for pages that will be navigated to.
             Routing.RegisterRoute(nameof(AddCubedItemPage), typeof(AddCubedItemPage));
+            dataService.CleanUpOrphanedTagsIfNeededAsync();
         }
 
         // OnAppearing is a built-in MAUI lifecycle method that is called
