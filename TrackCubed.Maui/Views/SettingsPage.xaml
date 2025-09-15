@@ -83,7 +83,7 @@
         <!-- This VerticalStackLayout is a sibling of the ScrollView, not a child. -->
         <!-- It is placed in the final row of the main Grid. -->
         <VerticalStackLayout Grid.Row="2" Spacing="10" Padding="20">
-            <Label Text="DANGER ZONE"
+            <Label Text="✖ DANGER ZONE ✖"
                    FontAttributes="Bold"
                    TextColor="Red"
                    HorizontalOptions="Center"
