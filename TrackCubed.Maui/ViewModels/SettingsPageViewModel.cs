@@ -166,5 +166,33 @@ namespace TrackCubed.Maui.ViewModels
             }
         }
 
+        [RelayCommand]
+        private async Task CleanUpOrphanedItemTypesAsync()
+        {
+            if (!await Shell.Current.DisplayAlert(
+                "Clean Up Item Types",
+                "This will permanently delete any custom item types that are not currently used by any of your Cubed Items. Continue?",
+                "Yes, Clean Up",
+                "Cancel"))
+            {
+                return;
+            }
+
+            int deletedCount = await _cubedDataService.CleanUpOrphanedItemTypesAsync();
+
+            if (deletedCount > 0)
+            {
+                await Shell.Current.DisplayAlert("Success", $"Successfully deleted {deletedCount} unused custom item type(s).", "OK");
+            }
+            else if (deletedCount == 0)
+            {
+                await Shell.Current.DisplayAlert("All Clean!", "No unused custom item types were found.", "OK");
+            }
+            else
+            {
+                await Shell.Current.DisplayAlert("Error", "Failed to clean up item types. Please try again.", "OK");
+            }
+        }
+
     }
 }

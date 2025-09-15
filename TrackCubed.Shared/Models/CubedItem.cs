@@ -47,11 +47,9 @@ namespace TrackCubed.Shared.Models
         /// </summary>
         public string? Notes { get; set; }
 
-        /// <summary>
-        /// The type of item, used for filtering and displaying the correct UI.
-        /// </summary>
-        [MaxLength(50)] // Good practice to set a max length in the database
-        public string ItemType { get; set; }
+        public int ItemTypeId { get; set; }
+        [ForeignKey(nameof(ItemTypeId))]
+        public ItemType ItemType { get; set; }
 
         /// <summary>
         /// The date and time when the item was first saved.

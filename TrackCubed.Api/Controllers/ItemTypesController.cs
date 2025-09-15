@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using TrackCubed.Api.Data;
+using TrackCubed.Shared.Models;
 
 namespace TrackCubed.Api.Controllers
 {
@@ -20,22 +21,45 @@ namespace TrackCubed.Api.Controllers
 
         // GET: api/ItemTypes
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<string>>> GetItemTypes()
+        public async Task<ActionResult<IEnumerable<ItemType>>> GetItemTypes() // <-- Returns the full object
         {
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.AsNoTracking()
                                      .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
             if (user == null) return Unauthorized();
 
-            // 1. Get the untouchable system types
-            var systemTypes = await _context.SystemItemTypes.Select(t => t.Name).ToListAsync();
-            // 2. Get this user's custom types
-            var userTypes = await _context.UserItemTypes.Where(t => t.UserId == user.Id).Select(t => t.Name).ToListAsync();
+            var itemTypes = await _context.ItemTypes
+                                           .Where(it => it.UserId == null || it.UserId == user.Id)
+                                           .OrderBy(t => t.Name)
+                                           .AsNoTracking()
+                                           .ToListAsync();
 
-            // 3. Combine, order, and return the list
-            var allTypes = systemTypes.Concat(userTypes).OrderBy(name => name).Distinct().ToList();
+            return Ok(itemTypes);
+        }
 
-            return Ok(allTypes);
+
+        // DELETE: api/ItemTypes/orphaned-custom
+        [HttpDelete("orphaned-custom")]
+        public async Task<IActionResult> DeleteOrphanedUserItemTypes()
+        {
+            var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var user = await _context.ApplicationUsers.AsNoTracking()
+                                     .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            // Find all custom item types for this user that are NOT referenced in the CubedItems table.
+            // This is the simple, performant query that the foreign key makes possible.
+            var orphanedTypesQuery = _context.ItemTypes
+                .Where(it => it.UserId == user.Id &&
+                             !_context.CubedItems.Any(ci => ci.ItemTypeId == it.Id));
+
+            // Use ExecuteDeleteAsync to perform a single, fast DELETE command on the database.
+            int deletedCount = await orphanedTypesQuery.ExecuteDeleteAsync();
+
+            return Ok(new { DeletedCount = deletedCount });
         }
     }
 }

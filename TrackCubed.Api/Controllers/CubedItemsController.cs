@@ -44,53 +44,44 @@ namespace TrackCubed.Api.Controllers
 
             // 3. Fetch and map the CubedItems belonging to that user in a single, efficient query.
             var items = await _context.CubedItems
-                                      .Where(c => c.CreatedById == user.Id) // Filter by user
-                                      .OrderByDescending(c => c.CreatedOn) // Sort by newest
-                                      .Select(c => new CubedItemDto // <-- THIS IS THE KEY CHANGE
-                                      {
-                                          // Map the entity properties to the DTO properties
-                                          Id = c.Id,
-                                          Name = c.Name,
-                                          Link = c.Link,
-                                          Description = c.Description,
-                                          ItemType = c.ItemType,
-                                          Notes = c.Notes,
-                                          CreatedOn = c.CreatedOn,
-                                          CreatedById = c.CreatedById,
-                                          Tags = c.Tags.Select(t => t.Name).ToList()
-                                      })
-                                      .ToListAsync(); // Execute the optimized query
-
+                  .Where(c => c.CreatedById == user.Id)
+                  .OrderByDescending(c => c.CreatedOn)
+                  .Select(c => new CubedItemDto
+                  {
+                      Id = c.Id,
+                      Name = c.Name,
+                      Link = c.Link,
+                      Description = c.Description,
+                      Notes = c.Notes,
+                      ItemTypeName = c.ItemType.Name, // <-- THE FIX: Map from the navigation property
+                      CreatedOn = c.CreatedOn,
+                      CreatedById = c.CreatedById,
+                      Tags = c.Tags.Select(t => t.Name).ToList()
+                  })
+                  .ToListAsync();
             return Ok(items);
         }
 
 
         // POST: api/CubedItems
         [HttpPost]
-        public async Task<ActionResult<CubedItem>> CreateCubedItem(CubedItemCreateDto itemDto)
+        public async Task<ActionResult<CubedItemDto>> CreateCubedItem(CubedItemCreateDto itemDto)
         {
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
-            if (user == null)
-            {
-                return Unauthorized("User profile not found.");
-            }
-            
-            // Instead of just accepting the string, process it to see if a new custom type needs to be created.
-            var finalItemType = await ProcessItemType(itemDto.ItemType, user.Id);
+            if (user == null) return Unauthorized("User profile not found.");
 
-            // Manually map from the DTO to the full CubedItem entity
+            // This returns the string name, but also creates the type if it's a new custom one.
+            int itemTypeId = await ProcessItemTypeId(itemDto.ItemTypeName, user.Id);
+
             var newCubedItem = new CubedItem
             {
-                // Properties from the DTO
+                Id = Guid.NewGuid(),
                 Name = itemDto.Name,
                 Link = itemDto.Link,
                 Description = itemDto.Description,
                 Notes = itemDto.Notes,
-                ItemType = finalItemType,
-
-                // Properties set by the server (cannot be set by the client)
-                Id = Guid.NewGuid(),
+                ItemTypeId = itemTypeId,
                 CreatedById = user.Id,
                 CreatedOn = DateTime.UtcNow,
                 DateLastAccessed = DateTime.UtcNow
@@ -101,19 +92,21 @@ namespace TrackCubed.Api.Controllers
             _context.CubedItems.Add(newCubedItem);
             await _context.SaveChangesAsync();
 
-            // Map the final entity to a safe DTO for the response.
+            // --- The Fix Is Here ---
+            // We already have all the information we need. No need for another database call.
             var createdItemDto = new CubedItemDto
             {
                 Id = newCubedItem.Id,
                 Name = newCubedItem.Name,
                 Link = newCubedItem.Link,
                 Description = newCubedItem.Description,
-                ItemType = newCubedItem.ItemType,
+                Notes = newCubedItem.Notes,
+                ItemTypeName = itemDto.ItemTypeName, // Use the name we already processed!
                 CreatedOn = newCubedItem.CreatedOn,
-                CreatedById = newCubedItem.CreatedById
+                CreatedById = newCubedItem.CreatedById,
+                Tags = itemDto.Tags // The tags from the original request are correct
             };
 
-            // Return the DTO
             return CreatedAtAction(nameof(GetMyCubedItems), new { id = createdItemDto.Id }, createdItemDto);
         }
 
@@ -158,13 +151,11 @@ namespace TrackCubed.Api.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdateCubedItem(Guid id, CubedItemDto itemDto)
         {
-            // A quick check to ensure the ID in the URL matches the ID in the body, if it exists.
             if (id != itemDto.Id)
             {
                 return BadRequest("ID mismatch.");
             }
 
-            // 1. Get the current user.
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.AsNoTracking()
                                      .FirstOrDefaultAsync(u => u.EntraObjectId == entraObjectId);
@@ -173,38 +164,33 @@ namespace TrackCubed.Api.Controllers
                 return Unauthorized();
             }
 
-            // 2. Find the existing item in the database.
-            // CRITICAL SECURITY CHECK: Ensure the item belongs to the current user.
+            // 1. Find the existing item AND its related tags in a single query.
             var itemToUpdate = await _context.CubedItems
-                                             .Include(i => i.Tags) // Eager load tags
+                                             .Include(i => i.Tags) // Eager loading is crucial here
                                              .FirstOrDefaultAsync(c => c.Id == id && c.CreatedById == user.Id);
             if (itemToUpdate == null)
             {
                 return NotFound("Item not found or you do not have permission to edit it.");
             }
 
-            // Process the incoming ItemType to handle potential new custom types.
-            var finalItemType = await ProcessItemType(itemDto.ItemType, user.Id);
+            // 2. Process the ItemType name to get its ID, creating it if it's a new custom type.
+            int itemTypeId = await ProcessItemTypeName(itemDto.ItemTypeName, user.Id);
 
-
-            // 3. Update properties from the DTO
+            // 3. Update the item's properties from the DTO.
             itemToUpdate.Name = itemDto.Name;
             itemToUpdate.Link = itemDto.Link;
             itemToUpdate.Description = itemDto.Description;
             itemToUpdate.Notes = itemDto.Notes;
-            itemToUpdate.ItemType = finalItemType;
+            itemToUpdate.ItemTypeId = itemTypeId;
             itemToUpdate.DateLastAccessed = DateTime.UtcNow;
-            // Note: We do NOT update CreatedOn or CreatedById.
 
-
-            // Make sure to include the existing tags so EF Core can track changes
-            await _context.Entry(itemToUpdate).Collection(i => i.Tags).LoadAsync();
+            // 4. Update the tags. The helper method will now work on the in-memory collection.
+            //    There is no need for an extra LoadAsync call.
             await UpdateItemTags(itemToUpdate, itemDto.Tags);
 
-            // 4. Save the changes to the database.
+            // 5. Save all changes (the item update AND any tag relationship changes).
             await _context.SaveChangesAsync();
 
-            // 5. Return "204 No Content" for a successful update.
             return NoContent();
         }
 
@@ -241,7 +227,7 @@ namespace TrackCubed.Api.Controllers
         [HttpGet("search")]
         public async Task<ActionResult<IEnumerable<CubedItemDto>>> SearchMyCubedItems(
             [FromQuery] string? searchText,
-            [FromQuery] string? itemType,
+            [FromQuery] int? itemTypeId,
             [FromQuery] List<string>? tags,
             [FromQuery] string tagMode = "any") // "any" for inclusive, "all" for exclusive
         {
@@ -269,10 +255,10 @@ namespace TrackCubed.Api.Controllers
                 );
             }
 
-            // 3. Add Item Type filter (if provided)
-            if (!string.IsNullOrWhiteSpace(itemType) && itemType.ToLower() != "all")
+            // This is now much simpler and faster.
+            if (itemTypeId.HasValue && itemTypeId.Value != 0) // We'll treat 0 as "All"
             {
-                query = query.Where(c => c.ItemType == itemType);
+                query = query.Where(c => c.ItemTypeId == itemTypeId.Value);
             }
 
             // 4. Add Tag filter (if provided)
@@ -298,44 +284,63 @@ namespace TrackCubed.Api.Controllers
 
             // 5. Execute the final, dynamically built query and map to DTOs.
             var results = await query.OrderByDescending(c => c.CreatedOn)
-                                     .Select(c => new CubedItemDto
-                                     {
-                                         // ... mapping logic from your GetMyCubedItems method ...
-                                         Id = c.Id,
-                                         Name = c.Name,
-                                         Link = c.Link,
-                                         Description = c.Description,
-                                         Notes = c.Notes,
-                                         ItemType = c.ItemType,
-                                         CreatedOn = c.CreatedOn,
-                                         CreatedById = c.CreatedById,
-                                         Tags = c.Tags.Select(t => t.Name).ToList()
-                                     })
-                                     .ToListAsync();
-
+                .Select(c => new CubedItemDto
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Link = c.Link,
+                    Description = c.Description,
+                    Notes = c.Notes,
+                    ItemTypeName = c.ItemType.Name,
+                    CreatedOn = c.CreatedOn,
+                    CreatedById = c.CreatedById,
+                    Tags = c.Tags.Select(t => t.Name).ToList()
+                })
+                .ToListAsync();
             return Ok(results);
         }
 
-        private async Task<string> ProcessItemType(string itemTypeName, int userId)
+        private async Task<int> ProcessItemTypeName(string itemTypeName, int userId)
         {
-            if (string.IsNullOrWhiteSpace(itemTypeName)) return "Other";
+            if (string.IsNullOrWhiteSpace(itemTypeName)) itemTypeName = "Other";
 
-            // Check if it's a known system type
-            var isSystemType = await _context.SystemItemTypes.AnyAsync(t => t.Name.ToLower() == itemTypeName.ToLower());
-            if (isSystemType) return itemTypeName;
+            var existingType = await _context.ItemTypes
+                .FirstOrDefaultAsync(it => it.Name.ToLower() == itemTypeName.ToLower() && (it.UserId == null || it.UserId == userId));
 
-            // If not a system type, check if it's a known user type for this user
-            var userType = await _context.UserItemTypes
-                                         .FirstOrDefaultAsync(t => t.UserId == userId && t.Name.ToLower() == itemTypeName.ToLower());
-
-            // If it's not a known user type, create a new one.
-            if (userType == null)
+            if (existingType != null)
             {
-                var newCustomType = new UserItemType { Name = itemTypeName, UserId = userId };
-                _context.UserItemTypes.Add(newCustomType);
+                return existingType.Id;
             }
 
-            return itemTypeName;
+            var newCustomType = new ItemType { Name = itemTypeName, UserId = userId };
+            _context.ItemTypes.Add(newCustomType);
+            await _context.SaveChangesAsync(); // Must save here to generate the new ID
+            return newCustomType.Id;
+        }
+
+        private async Task<int> ProcessItemTypeId(string itemTypeName, int userId)
+        {
+            if (string.IsNullOrWhiteSpace(itemTypeName))
+            {
+                itemTypeName = "Other"; // Default to "Other"
+            }
+
+            // Find if the type exists (either system or for this user)
+            var existingType = await _context.ItemTypes
+                .FirstOrDefaultAsync(it => it.Name.ToLower() == itemTypeName.ToLower() &&
+                                           (it.UserId == null || it.UserId == userId));
+
+            // If it exists, return its ID
+            if (existingType != null)
+            {
+                return existingType.Id;
+            }
+
+            // If it's a new custom type, create it, save it, and return the new ID
+            var newCustomType = new ItemType { Name = itemTypeName, UserId = userId };
+            _context.ItemTypes.Add(newCustomType);
+            await _context.SaveChangesAsync(); // Save here to generate the new ID
+            return newCustomType.Id;
         }
     }
 }

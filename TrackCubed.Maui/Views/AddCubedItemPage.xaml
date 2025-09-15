@@ -20,8 +20,9 @@
             <Editor Text="{Binding Notes}" Placeholder="Personal notes about this item..." AutoSize="TextChanges" HeightRequest="150"/>
 
             <Label Text="Item Type" Margin="0,15,0,0" />
-            <Picker ItemsSource="{Binding PredefinedItemTypes}"
-                SelectedItem="{Binding SelectedItemType}" />
+            <Picker ItemsSource="{Binding ItemTypeOptions}"
+                SelectedItem="{Binding SelectedItemType}"
+                    ItemDisplayBinding="{Binding Name}"/>
 
             <Entry Placeholder="Enter custom type"
                Text="{Binding CustomItemType}"

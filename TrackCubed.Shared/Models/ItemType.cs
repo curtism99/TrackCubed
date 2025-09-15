@@ -8,13 +8,16 @@ using System.Threading.Tasks;
 
 namespace TrackCubed.Shared.Models
 {
-    public class SystemItemType
+    public class ItemType
     {
-        [Key]
+        [Key] 
         public int Id { get; set; }
 
-        [Required]
-        [MaxLength(50)]
+        [Required][MaxLength(50)] 
         public string Name { get; set; }
+        public int? UserId { get; set; } // Null for system types, set for user types
+
+        [ForeignKey(nameof(UserId))] 
+        public ApplicationUser? User { get; set; }
     }
 }

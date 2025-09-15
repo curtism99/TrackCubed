@@ -35,7 +35,8 @@
                    Text="{Binding SearchText}" />
                 <Picker Title="Filter by Type"
                 ItemsSource="{Binding ItemTypeFilterOptions}"
-                SelectedItem="{Binding SelectedItemTypeFilter}" />
+                SelectedItem="{Binding SelectedItemTypeFilter}" 
+                        ItemDisplayBinding="{Binding Name}"/>
 
 
                 <!-- Input for adding a new tag filter -->

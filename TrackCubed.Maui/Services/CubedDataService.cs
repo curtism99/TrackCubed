@@ -15,20 +15,24 @@ namespace TrackCubed.Maui.Services
     public class CubedDataService
     {
         private readonly HttpClient _httpClient;
-        private readonly AuthService _authService;
+        private readonly IServiceProvider _services; // Use the service provider to break circular dependencies
         private const string LastTagCleanupKey = "LastTagCleanup";
 
-        public CubedDataService(HttpClient httpClient, AuthService authService)
+        public CubedDataService(HttpClient httpClient, IServiceProvider services)
         {
             _httpClient = httpClient;
-            _authService = authService;
+            _services = services;
         }
+
+        // It safely resolves the AuthService from the DI container.
+        private AuthService GetAuthService() => _services.GetRequiredService<AuthService>();
 
         public async Task<List<CubedItemDto>> GetMyCubedItemsAsync()
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync();
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync();
                 if (string.IsNullOrEmpty(token))
                 {
                     System.Diagnostics.Debug.WriteLine("[GetMyCubedItemsAsync] Failed: No auth token.");
@@ -69,7 +73,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return null;
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -114,7 +119,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return false;
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -136,7 +142,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return false;
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -154,31 +161,12 @@ namespace TrackCubed.Maui.Services
             }
         }
 
-        public async Task<List<string>> GetPredefinedItemTypesAsync()
+        public async Task<List<CubedItemDto>> SearchItemsAsync(string? searchText, int? itemTypeId, List<string>? tags, string tagMode)
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
-                if (string.IsNullOrEmpty(token)) return new List<string>();
-
-                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
-
-                var types = await _httpClient.GetFromJsonAsync<List<string>>("api/ItemTypes").ConfigureAwait(false);
-
-                return types ?? new List<string>();
-            }
-            catch (Exception ex)
-            {
-                System.Diagnostics.Debug.WriteLine($"Error fetching ItemTypes: {ex.Message}");
-                return new List<string> { "Link", "Other" }; // Fallback list on error
-            }
-        }
-
-        public async Task<List<CubedItemDto>> SearchItemsAsync(string? searchText, string? itemType, List<string>? tags, string tagMode)
-        {
-            try
-            {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return new List<CubedItemDto>();
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -186,15 +174,15 @@ namespace TrackCubed.Maui.Services
                 // Build the query string dynamically, now including the tagMode
                 var sb = new StringBuilder("api/CubedItems/search?");
                 if (!string.IsNullOrWhiteSpace(searchText)) sb.Append($"searchText={Uri.EscapeDataString(searchText)}&");
-                if (!string.IsNullOrWhiteSpace(itemType)) sb.Append($"itemType={Uri.EscapeDataString(itemType)}&");
+
+                // Add the itemTypeId if it has a value
+                if (itemTypeId.HasValue) sb.Append($"itemTypeId={itemTypeId.Value}&");
+
                 if (tags != null && tags.Any())
                 {
-                    foreach (var tag in tags)
-                    {
-                        sb.Append($"tags={Uri.EscapeDataString(tag)}&");
-                    }
+                    foreach (var tag in tags) sb.Append($"tags={Uri.EscapeDataString(tag)}&");
                 }
-                sb.Append($"tagMode={Uri.EscapeDataString(tagMode)}"); // Add the new parameter
+                sb.Append($"tagMode={Uri.EscapeDataString(tagMode)}");
 
 
                 var response = await _httpClient.GetAsync(sb.ToString()).ConfigureAwait(false);
@@ -215,8 +203,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                // No need for a token if the endpoint is authorized, as it's added below.
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return new List<string>();
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -236,7 +224,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return false;
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -256,7 +245,8 @@ namespace TrackCubed.Maui.Services
         {
             try
             {
-                var token = await _authService.GetAccessTokenAsync().ConfigureAwait(false);
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
                 if (string.IsNullOrEmpty(token)) return -1; // Return -1 to indicate an auth error
 
                 _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
@@ -288,7 +278,7 @@ namespace TrackCubed.Maui.Services
         public async Task CleanUpOrphanedTagsIfNeededAsync()
         {
             var lastCleanupTime = Preferences.Get(LastTagCleanupKey, DateTime.MinValue);
-            if ((DateTime.UtcNow - lastCleanupTime).TotalHours > 24)
+            if ((DateTime.UtcNow - lastCleanupTime).TotalMinutes > 24)
             {
                 System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Running...");
                 int deletedCount = await CleanUpOrphanedTagsAsync(); // Your existing method
@@ -297,6 +287,55 @@ namespace TrackCubed.Maui.Services
                     Preferences.Set(LastTagCleanupKey, DateTime.UtcNow);
                     System.Diagnostics.Debug.WriteLine($"[Auto-Cleanup] Success. Deleted {deletedCount} tags.");
                 }
+            }
+        }
+
+        public async Task<List<ItemType>> GetAvailableItemTypesAsync()
+        {
+            try
+            {
+                var authService = GetAuthService();
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return new List<ItemType>();
+
+                _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+                var types = await _httpClient.GetFromJsonAsync<List<ItemType>>("api/ItemTypes").ConfigureAwait(false);
+
+                return types ?? new List<ItemType>();
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Error fetching ItemTypes: {ex.Message}");
+                // On failure, return a minimal list to prevent the app from crashing.
+                return new List<ItemType> { new ItemType { Id = 7, Name = "Other" } };
+            }
+        }
+        public async Task<int> CleanUpOrphanedItemTypesAsync()
+        {
+            try
+            {
+                var authService = GetAuthService(); // Resolve the service
+                var token = await authService.GetAccessTokenAsync().ConfigureAwait(false);
+                if (string.IsNullOrEmpty(token)) return -1;
+
+                var request = new HttpRequestMessage(HttpMethod.Delete, "api/ItemTypes/orphaned-custom");
+                request.Headers.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token);
+
+                var response = await _httpClient.SendAsync(request).ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var result = System.Text.Json.JsonDocument.Parse(jsonString).RootElement;
+                    return result.TryGetProperty("deletedCount", out var count) ? count.GetInt32() : 0;
+                }
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Exception cleaning up item types: {ex.Message}");
+                return -1;
             }
         }
     }

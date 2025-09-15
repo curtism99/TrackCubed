@@ -20,203 +20,99 @@ namespace TrackCubed.Maui.ViewModels
         private readonly CubedDataService _dataService;
         private bool _isEditMode;
 
-        [ObservableProperty]
-        private string _pageTitle;
+        // --- Properties for Page State & UI ---
+        [ObservableProperty] private string _pageTitle;
+        [ObservableProperty] private string _saveButtonText;
+        [ObservableProperty] private CubedItemDto _itemToEdit; // The full DTO passed during navigation
 
-        [ObservableProperty]
-        private string _saveButtonText;
-        
-        [ObservableProperty]
-        private CubedItemDto _itemToEdit;
-
-        // An ObservableCollection to hold the list of tags for the UI
-        [ObservableProperty]
-        private ObservableCollection<string> _tags;
-
-
-        // A NEW collection to hold the suggestions returned from the API.
-        [ObservableProperty]
-        private ObservableCollection<string> _tagSuggestions;
-
-
-        // The text from the "Add Tag" entry field
-        [ObservableProperty]
-        private string _newTagText;
-
-        // This property is bound to the visibility of the custom Entry field
-        [ObservableProperty]
-        private bool _isCustomTypeEntryVisible;
-
-        // This property is bound to the text of the custom Entry field
-        [ObservableProperty]
-        private string _customItemType;
-
-        // This allows us to add items to it after it's been created.
-        [ObservableProperty]
-        private ObservableCollection<string> _predefinedItemTypes;
-
-        // Form properties
+        // --- Properties for Form Data Binding ---
         [ObservableProperty] private Guid _itemId;
         [ObservableProperty] private string _name;
         [ObservableProperty] private string _link;
         [ObservableProperty] private string _description;
         [ObservableProperty] private string _notes;
-        [ObservableProperty] private CubedItemType _itemType;
 
-        // Add other properties for other fields as needed
+        // --- Properties for Item Type Picker ---
+        [ObservableProperty] private ObservableCollection<ItemType> _itemTypeOptions; // Holds the full ItemType objects
+        [ObservableProperty] private ItemType _selectedItemType; // Holds the currently selected ItemType OBJECT
 
-        [ObservableProperty]
-        private string _selectedItemType;
+        // --- Properties for Custom Item Type ---
+        [ObservableProperty] private bool _isCustomTypeEntryVisible;
+        [ObservableProperty] private string _customItemType;
+
+        // --- Properties for Tag Management ---
+        [ObservableProperty] private ObservableCollection<string> _tags;
+        [ObservableProperty] private string _newTagText;
+        [ObservableProperty] private ObservableCollection<string> _tagSuggestions;
 
         public AddCubedItemViewModel(CubedDataService dataService)
         {
             _dataService = dataService;
-            Tags = new ObservableCollection<string>(); // Initialize the collection
-            PredefinedItemTypes = new ObservableCollection<string>();
+
+            // Initialize all collections immediately to prevent null reference errors
+            ItemTypeOptions = new ObservableCollection<ItemType>();
             Tags = new ObservableCollection<string>();
             TagSuggestions = new ObservableCollection<string>();
         }
 
-        [RelayCommand]
-        private async Task SaveAsync()
-        {
-            string finalItemType = SelectedItemType;
-
-            if (SelectedItemType == "Other" && string.IsNullOrWhiteSpace(CustomItemType))
-            {
-                await Shell.Current.DisplayAlert("Validation Error", "Please enter a custom item type when 'Other' is selected.", "OK");
-                return; // Stop the save operation
-            }
-
-            if (SelectedItemType == "Other")
-            {
-                finalItemType = CustomItemType;
-            }
-
-            if (_isEditMode)
-            {
-                var updatedDto = new CubedItemDto
-                {
-                    Id = this.ItemId,
-                    Name = this.Name,
-                    Link = this.Link,
-                    Description = this.Description,
-                    ItemType = finalItemType, // Use the final Item type
-                    Notes = this.Notes,
-                    // Convert the ObservableCollection back to a simple List for the DTO
-                    Tags = new List<string>(this.Tags)
-                };
-                bool success = await _dataService.UpdateCubedItemAsync(updatedDto);
-                if (!success) await Shell.Current.DisplayAlert("Error", "Failed to update.", "OK");
-            }
-            else
-            {
-                var newItemDto = new CubedItemCreateDto
-                {
-                    Name = this.Name,
-                    Link = this.Link,
-                    Description = this.Description,
-                    Notes = this.Notes,
-                    ItemType = finalItemType, // Use the final Item type
-                    // Convert the ObservableCollection back to a simple List for the DTO
-                    Tags = new List<string>(this.Tags)
-                };
-                var createdItem = await _dataService.AddCubedItemAsync(newItemDto);
-                if (createdItem == null) await Shell.Current.DisplayAlert("Error", "Failed to save.", "OK");
-            }
-
-            // Regardless of add or edit, notify the main page to refresh and navigate back.
-            WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
-            await Shell.Current.GoToAsync("..");
-        }
-
-        [RelayCommand]
-        private async Task CancelAsync()
-        {
-            await Shell.Current.GoToAsync("..");
-        }
-
-
-        [RelayCommand]
-        private void AddTag(string tagToAdd)
-        {
-            if (string.IsNullOrWhiteSpace(tagToAdd)) return;
-            var tag = tagToAdd.Trim();
-            if (!Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
-            {
-                Tags.Add(tag);
-            }
-
-            // Clear the entry field and the suggestions list for a clean UX.
-            NewTagText = string.Empty;
-            TagSuggestions.Clear();
-        }
-
-        [RelayCommand]
-        private void RemoveTag(string tagToRemove)
-        {
-            if (tagToRemove != null)
-            {
-                Tags.Remove(tagToRemove);
-            }
-        }
-
-        // This method is automatically called when the SelectedItemType property changes
-        // This is where we will control the visibility of the custom entry field.
-        partial void OnSelectedItemTypeChanged(string value) => IsCustomTypeEntryVisible = value == "Other";
-
-        // This method is now responsible for ALL data loading and setup.
+        // This command is called from the page's OnAppearing method
         [RelayCommand]
         private async Task InitializePageAsync()
         {
-            // Always default to Add mode first
-            PageTitle = "✎ Add New Cubed Item";
-            SaveButtonText = "+ Create";
+            // 1. Set default state for "Add Mode"
+            PageTitle = "Add New Item";
+            SaveButtonText = "Create";
+            _isEditMode = false;
 
-            var types = await _dataService.GetPredefinedItemTypesAsync();
-            PredefinedItemTypes.Clear();
+            // 2. Load the available item types from the API
+            var types = await _dataService.GetAvailableItemTypesAsync();
+            ItemTypeOptions.Clear();
             foreach (var type in types)
             {
-                PredefinedItemTypes.Add(type);
+                ItemTypeOptions.Add(type);
             }
 
+            // 3. If an item was passed in, switch to "Edit Mode"
             if (ItemToEdit != null)
             {
                 _isEditMode = true;
-                PageTitle = "✎ Edit Cubed Item";
-                SaveButtonText = "✎ Update";
+                PageTitle = "Edit Item";
+                SaveButtonText = "Update";
 
+                // Populate form from the DTO
                 ItemId = ItemToEdit.Id;
                 Name = ItemToEdit.Name;
                 Link = ItemToEdit.Link;
                 Description = ItemToEdit.Description;
                 Notes = ItemToEdit.Notes;
 
-                if (!string.IsNullOrEmpty(ItemToEdit.ItemType))
+                Tags.Clear();
+                foreach (var tag in ItemToEdit.Tags) Tags.Add(tag);
+
+                // Set the Picker's selection
+                SelectedItemType = ItemTypeOptions.FirstOrDefault(t => t.Name.Equals(ItemToEdit.ItemTypeName, StringComparison.OrdinalIgnoreCase));
+
+                // If the type is custom, set the custom text field
+                if (SelectedItemType?.Name == "Other")
                 {
-                    if (!PredefinedItemTypes.Contains(ItemToEdit.ItemType))
-                    {
-                        PredefinedItemTypes.Insert(0, ItemToEdit.ItemType);
-                    }
-                    SelectedItemType = ItemToEdit.ItemType;
-                }
-                if (ItemToEdit.Tags != null)
-                {
-                    Tags.Clear();
-                    foreach (var tag in ItemToEdit.Tags)
-                    {
-                        Tags.Add(tag);
-                    }
+                    CustomItemType = ItemToEdit.ItemTypeName;
                 }
             }
 
-            if (string.IsNullOrEmpty(SelectedItemType))
+            // 4. If no item type is selected (e.g., in Add Mode), default to "Link"
+            if (SelectedItemType == null)
             {
-                SelectedItemType = PredefinedItemTypes.FirstOrDefault();
+                SelectedItemType = ItemTypeOptions.FirstOrDefault(t => t.Name == "Link");
             }
         }
 
-        // This partial method is the magic. It runs every time NewTagText changes.
+        // This partial method fires when the Picker's selection changes
+        partial void OnSelectedItemTypeChanged(ItemType value)
+        {
+            IsCustomTypeEntryVisible = value?.Name == "Other";
+        }
+
+        // This partial method fires when the user types in the tag box
         async partial void OnNewTagTextChanged(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length < 2)
@@ -228,14 +124,85 @@ namespace TrackCubed.Maui.ViewModels
             MainThread.BeginInvokeOnMainThread(() =>
             {
                 TagSuggestions.Clear();
-                if (suggestions != null)
-                {
-                    foreach (var s in suggestions)
-                    {
-                        TagSuggestions.Add(s);
-                    }
-                }
+                if (suggestions != null) { foreach (var s in suggestions) TagSuggestions.Add(s); }
             });
         }
+
+        [RelayCommand]
+        private void AddTag(string tagToAdd)
+        {
+            if (string.IsNullOrWhiteSpace(tagToAdd)) return;
+            var tag = tagToAdd.Trim();
+            if (!Tags.Contains(tag, StringComparer.OrdinalIgnoreCase))
+            {
+                Tags.Add(tag);
+            }
+            NewTagText = string.Empty;
+            TagSuggestions.Clear();
+        }
+
+        [RelayCommand]
+        private void RemoveTag(string tagToRemove)
+        {
+            if (tagToRemove != null) Tags.Remove(tagToRemove);
+        }
+
+        [RelayCommand]
+        private async Task SaveAsync()
+        {
+            // 1. Get the final item type name
+            if (SelectedItemType == null)
+            {
+                await Shell.Current.DisplayAlert("Validation Error", "Please select an item type.", "OK");
+                return;
+            }
+
+            string finalItemTypeName = SelectedItemType.Name;
+            if (SelectedItemType.Name == "Other")
+            {
+                if (string.IsNullOrWhiteSpace(CustomItemType))
+                {
+                    await Shell.Current.DisplayAlert("Validation Error", "Please enter a custom item type when 'Other' is selected.", "OK");
+                    return;
+                }
+                finalItemTypeName = CustomItemType.Trim();
+            }
+
+            // 2. Call the correct service method based on the mode
+            if (_isEditMode)
+            {
+                var updatedDto = new CubedItemDto
+                {
+                    Id = ItemId,
+                    Name = Name,
+                    Link = Link,
+                    Description = Description,
+                    Notes = Notes,
+                    ItemTypeName = finalItemTypeName,
+                    Tags = new List<string>(Tags)
+                };
+                await _dataService.UpdateCubedItemAsync(updatedDto);
+            }
+            else
+            {
+                var newItemDto = new CubedItemCreateDto
+                {
+                    Name = Name,
+                    Link = Link,
+                    Description = Description,
+                    Notes = Notes,
+                    ItemTypeName = finalItemTypeName,
+                    Tags = new List<string>(Tags)
+                };
+                await _dataService.AddCubedItemAsync(newItemDto);
+            }
+
+            // 3. Notify the main page and navigate back
+            WeakReferenceMessenger.Default.Send(new RefreshItemsMessage(true));
+            await Shell.Current.GoToAsync("..");
+        }
+
+        [RelayCommand]
+        private async Task CancelAsync() => await Shell.Current.GoToAsync("..");
     }
 }

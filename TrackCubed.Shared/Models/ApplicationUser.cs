@@ -24,6 +24,6 @@ namespace TrackCubed.Shared.Models
         // The collection of tags created by this user.
         public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
-        public ICollection<UserItemType> CustomItemTypes { get; set; } = new List<UserItemType>();
+        public ICollection<ItemType> CustomItemTypes { get; set; } = new List<ItemType>();
     }
 }

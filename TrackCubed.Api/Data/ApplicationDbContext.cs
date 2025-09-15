@@ -21,63 +21,64 @@ namespace TrackCubed.Api.Data
 
         public DbSet<CubedItem> CubedItems { get; set; }
         public DbSet<Tag> Tags { get; set; }
-        public DbSet<SystemItemType> SystemItemTypes { get; set; }
-        public DbSet<UserItemType> UserItemTypes { get; set; }
+        public DbSet<ItemType> ItemTypes { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
 
-            // --- RELATIONSHIPS ---
-            // By convention, EF Core should figure out the relationships. The issue is purely with cascade deletes.
-            // Let's explicitly state the one that is causing the problem.
-
-            // An ApplicationUser has many CubedItems. When the user is deleted, delete their items.
-            // This will cascade to the CubedItemTag table correctly.
+            // -- PRIMARY OWNERSHIP --
+            // A User has many CubedItems. Deleting a user deletes what they created.
             modelBuilder.Entity<ApplicationUser>()
                 .HasMany(u => u.CubedItems)
                 .WithOne(c => c.CreatedBy)
+                .HasForeignKey(c => c.CreatedById)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            // A User has many Tags. THIS is the conflicting cascade path. SQL Server doesn't
-            // know if it should delete the CubedItemTag records because the User deleted the Tag,
-            // or because the User deleted the CubedItem. We must disable one.
+            // A User owns their custom item types.
+            modelBuilder.Entity<ApplicationUser>()
+                .HasMany(u => u.CustomItemTypes)
+                .WithOne(it => it.User)
+                .HasForeignKey(it => it.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // A CubedItem has one ItemType. An ItemType can be used by many CubedItems.
+            // If you try to delete an ItemType that is in use, the operation should fail.
+            modelBuilder.Entity<CubedItem>()
+                .HasOne(ci => ci.ItemType)
+                .WithMany()
+                .HasForeignKey(ci => ci.ItemTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // -- THIS IS THE FIX --
+            // A User has many Tags. But we cannot cascade this delete because it conflicts
+            // with the User->CubedItem->CubedItemTag path.
+            // We will handle deleting tags manually in our code.
             modelBuilder.Entity<ApplicationUser>()
                 .HasMany(u => u.Tags)
                 .WithOne(t => t.User)
-                .OnDelete(DeleteBehavior.Restrict); // This tells SQL "Do not delete a user if they still have tags"
+                .HasForeignKey(t => t.UserId)
+                .OnDelete(DeleteBehavior.Restrict); // Use RESTRICT to break the cycle.
 
-            // A User has many CustomItemTypes. This is a simple relationship with no cycles.
-            modelBuilder.Entity<ApplicationUser>()
-               .HasMany(u => u.CustomItemTypes)
-               .WithOne(uit => uit.User)
-               .OnDelete(DeleteBehavior.Cascade);
 
-            // Manually configure the join table
+            // Manually configure the join table to ensure its cascades are correct.
             modelBuilder.Entity<CubedItem>()
                 .HasMany(c => c.Tags)
-                .WithMany(t => t.CubedItems)
-                .UsingEntity("CubedItemTag",
-                    l => l.HasOne(typeof(Tag)).WithMany().HasForeignKey("TagsId").OnDelete(DeleteBehavior.Cascade),
-                    r => r.HasOne(typeof(CubedItem)).WithMany().HasForeignKey("CubedItemsId").OnDelete(DeleteBehavior.NoAction),
-                    j => j.HasKey("CubedItemsId", "TagsId"));
+                .WithMany(t => t.CubedItems);
 
-            // --- INDEX CONFIGURATIONS ---
+            // --- INDEXES & SEED DATA (Unchanged and Correct) ---
             modelBuilder.Entity<Tag>().HasIndex(t => new { t.UserId, t.Name }).IsUnique();
-            modelBuilder.Entity<UserItemType>().HasIndex(uit => new { uit.UserId, uit.Name }).IsUnique();
+            modelBuilder.Entity<ItemType>().HasIndex(it => new { it.UserId, it.Name }).IsUnique().HasFilter("[UserId] IS NOT NULL"); // Index for custom types only
 
-            // --- SEED DATA ---
-            modelBuilder.Entity<SystemItemType>().HasData(
-                new SystemItemType { Id = 1, Name = "Link" },
-                new SystemItemType { Id = 2, Name = "Image" },
-                new SystemItemType { Id = 3, Name = "Song" },
-                new SystemItemType { Id = 4, Name = "Video" },
-                new SystemItemType { Id = 5, Name = "Journal Entry" },
-                new SystemItemType { Id = 6, Name = "Document" },
-                new SystemItemType { Id = 7, Name = "Other" }
-            );
-            modelBuilder.Entity<Tag>().HasData(
-               new { Id = 1, Name = "dummy", UserId = 1 }
+            // -- SEED DATA --
+            modelBuilder.Entity<ItemType>().HasData(
+                    new ItemType { Id = 1, Name = "Link", UserId = null },
+                    new ItemType { Id = 2, Name = "Image", UserId = null },
+                    new ItemType { Id = 3, Name = "Song", UserId = null },
+                    new ItemType { Id = 4, Name = "Video", UserId = null },
+                    new ItemType { Id = 5, Name = "Journal Entry", UserId = null },
+                    new ItemType { Id = 6, Name = "Document", UserId = null },
+                    new ItemType { Id = 7, Name = "Other", UserId = null }
             );
         }
     }
