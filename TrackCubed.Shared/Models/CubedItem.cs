@@ -81,6 +81,16 @@ namespace TrackCubed.Shared.Models
         /// </summary>
         [ForeignKey(nameof(CreatedById))]
         public ApplicationUser CreatedBy { get; set; }
+
+
+        [MaxLength(255)]
+        public string? PreviewTitle { get; set; }
+
+        [MaxLength(1024)]
+        public string? PreviewDescription { get; set; }
+
+        [MaxLength(2048)]
+        public string? PreviewImageUrl { get; set; }
     }
 
     /// <summary>

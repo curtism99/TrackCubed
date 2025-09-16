@@ -20,5 +20,8 @@ namespace TrackCubed.Shared.DTOs
         public DateTime CreatedOn { get; set; }
         public int CreatedById { get; set; }
         public List<string> Tags { get; set; } = new List<string>();
+        public string? PreviewTitle { get; set; }
+        public string? PreviewDescription { get; set; }
+        public string? PreviewImageUrl { get; set; }
     }
 }
