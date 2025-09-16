@@ -13,6 +13,7 @@
 
     <ContentPage.Resources>
         <converters:IsNotNullOrEmptyConverter x:Key="IsNotNullOrEmptyConverter" />
+        <converters:ItemTypeToIconConverter x:Key="ItemTypeToIconConverter" />
     </ContentPage.Resources>
     <!-- This is the single, top-level layout container -->
     <Grid RowDefinitions="Auto, *" RowSpacing="0">
@@ -175,7 +176,30 @@
                                                 </Label.GestureRecognizers>
                                             </Label>
                                         </HorizontalStackLayout>
+                                        
+                                        <!-- This entire layout will only be visible if there's an ItemTypeName -->
+                                        <HorizontalStackLayout Spacing="5" Margin="0,5,0,0"
+                         IsVisible="{Binding ItemTypeName, Converter={StaticResource IsNotNullOrEmptyConverter}}">
 
+                                            <!-- The Emoji Label: Uses the converter -->
+                                            <Label Text="{Binding ItemTypeName, Converter={StaticResource ItemTypeToIconConverter}}"
+               FontSize="Micro"
+               VerticalOptions="Center" />
+
+                                            <!-- The Text Label: Displays the type name -->
+                                            <Label FontSize="Micro"
+               FontAttributes="Italic"
+               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+               VerticalOptions="Center">
+                                                <Label.FormattedText>
+                                                    <FormattedString>
+                                                        <Span Text="Type: "/>
+                                                        <Span Text="{Binding ItemTypeName}"/>
+                                                    </FormattedString>
+                                                </Label.FormattedText>
+                                            </Label>
+
+                                        </HorizontalStackLayout>
 
                                         <Label Text="{Binding ItemType, StringFormat='Type: {0}'}" FontSize="Micro" FontAttributes="Italic" 
                        TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
