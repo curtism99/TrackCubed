@@ -161,7 +161,7 @@ namespace TrackCubed.Maui.Services
             }
         }
 
-        public async Task<List<CubedItemDto>> SearchItemsAsync(string? searchText, int? itemTypeId, List<string>? tags, string tagMode)
+        public async Task<List<CubedItemDto>> SearchItemsAsync(string? searchText, int? itemTypeId, List<string>? tags, string tagMode, int pageNumber, int pageSize)
         {
             try
             {
@@ -174,16 +174,14 @@ namespace TrackCubed.Maui.Services
                 // Build the query string dynamically, now including the tagMode
                 var sb = new StringBuilder("api/CubedItems/search?");
                 if (!string.IsNullOrWhiteSpace(searchText)) sb.Append($"searchText={Uri.EscapeDataString(searchText)}&");
-
-                // Add the itemTypeId if it has a value
                 if (itemTypeId.HasValue) sb.Append($"itemTypeId={itemTypeId.Value}&");
-
                 if (tags != null && tags.Any())
                 {
                     foreach (var tag in tags) sb.Append($"tags={Uri.EscapeDataString(tag)}&");
                 }
-                sb.Append($"tagMode={Uri.EscapeDataString(tagMode)}");
-
+                sb.Append($"tagMode={Uri.EscapeDataString(tagMode)}&");
+                sb.Append($"pageNumber={pageNumber}&");
+                sb.Append($"pageSize={pageSize}");
 
                 var response = await _httpClient.GetAsync(sb.ToString()).ConfigureAwait(false);
                 if (response.IsSuccessStatusCode)

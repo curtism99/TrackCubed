@@ -115,19 +115,20 @@
             <!-- Row 1: The list -->
             <!-- The RefreshView wraps the list and provides pull-to-refresh -->
             <RefreshView Grid.Row="1"
-                     Command="{Binding LoadItemsCommand}"
-                     IsRefreshing="{Binding LoadItemsCommand.IsRunning}">
+                     Command="{Binding RefreshCommand}"
+                     IsRefreshing="{Binding RefreshCommand.IsRunning}">
                 <CollectionView ItemsSource="{Binding Items}"
-                            VerticalOptions="Fill">
+                            RemainingItemsThreshold="5"
+                    RemainingItemsThresholdReachedCommand="{Binding LoadMoreCommand}">
                     <CollectionView.ItemTemplate>
                         <!-- In your DataTemplate for the CollectionView... -->
                         <DataTemplate x:DataType="dtos:CubedItemDto">
                             <Frame Padding="15" Margin="10" CornerRadius="8" HasShadow="True"
-           BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
+                                    BackgroundColor="{AppThemeBinding Light={StaticResource FrameBackgroundColorLight}, Dark={StaticResource FrameBackgroundColorDark}}">
                                 <Frame.GestureRecognizers>
                                     <TapGestureRecognizer 
-                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
-                CommandParameter="{Binding .}"/>
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=GoToEditItemCommand}"
+                                        CommandParameter="{Binding .}"/>
                                 </Frame.GestureRecognizers>
 
                                 <!-- Use a Grid as the top-level container to place the delete button -->
@@ -141,56 +142,56 @@
                                         <Grid ColumnDefinitions="Auto, *" ColumnSpacing="8">
                                             <Label Grid.Column="0" Text="🧊" FontSize="Subtitle" VerticalOptions="Center" />
                                             <Label Grid.Column="1" Text="{Binding Name}" FontSize="Large" FontAttributes="Bold" 
-                           TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"
-                           LineBreakMode="WordWrap" />
+                                                   TextColor="{AppThemeBinding Light={StaticResource PrimaryTextColorLight}, Dark={StaticResource PrimaryTextColorDark}}"
+                                                   LineBreakMode="WordWrap" />
                                         </Grid>
 
                                         <!-- 2. The rest of the details stack vertically below -->
                                         <Label Text="{Binding Description}" FontSize="Small" 
-                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
-                       LineBreakMode="WordWrap" />
+                                           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
+                                           LineBreakMode="WordWrap" />
 
                                         <!-- This HorizontalStackLayout will only appear if the 'Link' property is not null or empty.-->
                                         <HorizontalStackLayout Spacing="5"
-                     IsVisible="{Binding Link, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                            IsVisible="{Binding Link, Converter={StaticResource IsNotNullOrEmptyConverter}}">
 
                                             <!-- 1. The static "Source:" label with normal styling -->
                                             <Label Text="Source:"
-           FontSize="Micro" 
-           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
-           VerticalOptions="Center"/>
+                                               FontSize="Micro" 
+                                               TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
+                                               VerticalOptions="Center"/>
 
                                             <!-- 2. The dynamic link Label, styled as a hyperlink -->
                                             <Label Text="{Binding Link}" 
-           FontSize="Micro"
-           TextColor="{StaticResource Primary}"
-           TextDecorations="Underline"
-           VerticalOptions="Center"
-           LineBreakMode="TailTruncation">
+                                               FontSize="Micro"
+                                               TextColor="{StaticResource Primary}"
+                                               TextDecorations="Underline"
+                                               VerticalOptions="Center"
+                                               LineBreakMode="TailTruncation">
                                                 <!-- Good for very long links -->
                                                 <Label.GestureRecognizers>
                                                     <!-- The tap gesture is now ONLY on the link part -->
                                                     <TapGestureRecognizer
-                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=OpenLinkCommand}"
-                CommandParameter="{Binding Link}" />
+                                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=OpenLinkCommand}"
+                                                        CommandParameter="{Binding Link}" />
                                                 </Label.GestureRecognizers>
                                             </Label>
                                         </HorizontalStackLayout>
                                         
                                         <!-- This entire layout will only be visible if there's an ItemTypeName -->
                                         <HorizontalStackLayout Spacing="5" Margin="0,5,0,0"
-                         IsVisible="{Binding ItemTypeName, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+                                                IsVisible="{Binding ItemTypeName, Converter={StaticResource IsNotNullOrEmptyConverter}}">
 
                                             <!-- The Emoji Label: Uses the converter -->
                                             <Label Text="{Binding ItemTypeName, Converter={StaticResource ItemTypeToIconConverter}}"
-               FontSize="Micro"
-               VerticalOptions="Center" />
+                                                   FontSize="Micro"
+                                                   VerticalOptions="Center" />
 
                                             <!-- The Text Label: Displays the type name -->
                                             <Label FontSize="Micro"
-               FontAttributes="Italic"
-               TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
-               VerticalOptions="Center">
+                                                   FontAttributes="Italic"
+                                                   TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"
+                                                   VerticalOptions="Center">
                                                 <Label.FormattedText>
                                                     <FormattedString>
                                                         <Span Text="Type: "/>
@@ -200,9 +201,6 @@
                                             </Label>
 
                                         </HorizontalStackLayout>
-
-                                        <Label Text="{Binding ItemType, StringFormat='Type: {0}'}" FontSize="Micro" FontAttributes="Italic" 
-                       TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
 
                                         <!-- 3. The Tags layout now sits correctly at the bottom of the stack -->
                                         <!-- Display area for currently applied tags -->
@@ -229,15 +227,22 @@
 
                                     <!-- The delete button sits in the second column of the main Grid -->
                                     <Button Grid.Column="1" 
-                    Text="✖" 
-                    VerticalOptions="Start"
-                    BackgroundColor="Red"
-                    Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
-                    CommandParameter="{Binding .}"/>
+                                        Text="✖" 
+                                        VerticalOptions="Start"
+                                        BackgroundColor="Red"
+                                        Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=DeleteCubedItemCommand}"
+                                        CommandParameter="{Binding .}"/>        
                                 </Grid>
                             </Frame>
                         </DataTemplate>
                     </CollectionView.ItemTemplate>
+                    <CollectionView.Footer>
+                        <!-- The footer's spinner is bound to the LOAD MORE command's state -->
+                        <ActivityIndicator IsVisible="{Binding LoadMoreCommand.IsRunning}"
+                               IsRunning="{Binding LoadMoreCommand.IsRunning}"
+                               HorizontalOptions="Center"
+                               Margin="20" />
+                    </CollectionView.Footer>
                 </CollectionView>
             </RefreshView>
 

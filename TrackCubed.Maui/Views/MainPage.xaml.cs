@@ -26,7 +26,7 @@ namespace TrackCubed.Maui.Views
                 // Let them run in parallel for better performance.
                 await Task.WhenAll(
                     _viewModel.LoadFilterOptionsCommand.ExecuteAsync(null),
-                    _viewModel.LoadItemsCommand.ExecuteAsync(null)
+                    _viewModel.RefreshCommand.ExecuteAsync(null)
                 );
             }
         }

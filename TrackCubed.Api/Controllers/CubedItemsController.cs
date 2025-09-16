@@ -229,7 +229,9 @@ namespace TrackCubed.Api.Controllers
             [FromQuery] string? searchText,
             [FromQuery] int? itemTypeId,
             [FromQuery] List<string>? tags,
-            [FromQuery] string tagMode = "any") // "any" for inclusive, "all" for exclusive
+            [FromQuery] string tagMode = "any", // "any" for inclusive, "all" for exclusive
+            [FromQuery] int pageNumber = 1,  // Default to the first page
+            [FromQuery] int pageSize = 20)  // Default to 20 items per page
         {
             var entraObjectId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var user = await _context.ApplicationUsers.AsNoTracking()
@@ -282,8 +284,14 @@ namespace TrackCubed.Api.Controllers
                 }
             }
 
+            // 1. First, ORDER the entire result set in the database by the newest items.
+            var orderedQuery = query.OrderByDescending(c => c.CreatedOn);
+
+            // 2. THEN, apply pagination to the correctly sorted list.
+            var pagedQuery = orderedQuery.Skip((pageNumber - 1) * pageSize).Take(pageSize);
+
             // 5. Execute the final, dynamically built query and map to DTOs.
-            var results = await query.OrderByDescending(c => c.CreatedOn)
+            var results = await pagedQuery.OrderByDescending(c => c.CreatedOn)
                 .Select(c => new CubedItemDto
                 {
                     Id = c.Id,
