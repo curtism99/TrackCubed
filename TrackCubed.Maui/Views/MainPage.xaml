@@ -4,13 +4,16 @@
              xmlns:model="clr-namespace:TrackCubed.Shared.Models;assembly=TrackCubed.Shared"
              xmlns:dtos="clr-namespace:TrackCubed.Shared.DTOs;assembly=TrackCubed.Shared"
              xmlns:viewmodel="clr-namespace:TrackCubed.Maui.ViewModels"
+             xmlns:converters="clr-namespace:TrackCubed.Maui.Converters"
              x:DataType="viewmodel:MainPageViewModel"
              x:Class="TrackCubed.Maui.Views.MainPage"
              Shell.NavBarIsVisible="False" 
               Title="{Binding Title}"
              BackgroundColor="{AppThemeBinding Light={StaticResource PageBackgroundColorLight}, Dark={StaticResource PageBackgroundColorDark}}">
 
-
+    <ContentPage.Resources>
+        <converters:IsNotNullOrEmptyConverter x:Key="IsNotNullOrEmptyConverter" />
+    </ContentPage.Resources>
     <!-- This is the single, top-level layout container -->
     <Grid RowDefinitions="Auto, *" RowSpacing="0">
 
@@ -145,8 +148,35 @@
                                         <Label Text="{Binding Description}" FontSize="Small" 
                        TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
                        LineBreakMode="WordWrap" />
-                                        <Label Text="{Binding Link, StringFormat='Source: {0}'}" FontSize="Micro" 
-                       TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"/>
+
+                                        <!-- This HorizontalStackLayout will only appear if the 'Link' property is not null or empty.-->
+                                        <HorizontalStackLayout Spacing="5"
+                     IsVisible="{Binding Link, Converter={StaticResource IsNotNullOrEmptyConverter}}">
+
+                                            <!-- 1. The static "Source:" label with normal styling -->
+                                            <Label Text="Source:"
+           FontSize="Micro" 
+           TextColor="{AppThemeBinding Light={StaticResource SecondaryTextColorLight}, Dark={StaticResource SecondaryTextColorDark}}"
+           VerticalOptions="Center"/>
+
+                                            <!-- 2. The dynamic link Label, styled as a hyperlink -->
+                                            <Label Text="{Binding Link}" 
+           FontSize="Micro"
+           TextColor="{StaticResource Primary}"
+           TextDecorations="Underline"
+           VerticalOptions="Center"
+           LineBreakMode="TailTruncation">
+                                                <!-- Good for very long links -->
+                                                <Label.GestureRecognizers>
+                                                    <!-- The tap gesture is now ONLY on the link part -->
+                                                    <TapGestureRecognizer
+                Command="{Binding Source={RelativeSource AncestorType={x:Type viewmodel:MainPageViewModel}}, Path=OpenLinkCommand}"
+                CommandParameter="{Binding Link}" />
+                                                </Label.GestureRecognizers>
+                                            </Label>
+                                        </HorizontalStackLayout>
+
+
                                         <Label Text="{Binding ItemType, StringFormat='Type: {0}'}" FontSize="Micro" FontAttributes="Italic" 
                        TextColor="{AppThemeBinding Light={StaticResource Gray500}, Dark={StaticResource Gray400}}"/>
 

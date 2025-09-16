@@ -12,7 +12,6 @@ using TrackCubed.Maui.Services;
 using TrackCubed.Maui.Views;
 using TrackCubed.Shared.DTOs;
 using TrackCubed.Shared.Models;
-using static Java.Nio.Channels.FileChannel;
 
 namespace TrackCubed.Maui.ViewModels
 {
@@ -293,6 +292,38 @@ namespace TrackCubed.Maui.ViewModels
                 // 4. Set the default selection.
                 SelectedItemTypeFilter = allItemsType;
             });
+        }
+
+        [RelayCommand]
+        private async Task OpenLinkAsync(string url)
+        {
+            // 1. Basic validation: Make sure the URL is not empty.
+            if (string.IsNullOrWhiteSpace(url))
+            {
+                await Shell.Current.DisplayAlert("No Link", "This item does not have a link to open.", "OK");
+                return;
+            }
+
+            // 2. Add 'http://' or 'https://' if it's missing, which is a common user input error.
+            //    The Launcher requires a well-formed URI.
+            string fullUrl = url;
+            if (!fullUrl.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !fullUrl.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+            {
+                fullUrl = "http://" + fullUrl;
+            }
+
+            try
+            {
+                // 3. Use the cross-platform Launcher to open the URL in the default browser.
+                Uri uri = new Uri(fullUrl);
+                await Browser.Default.OpenAsync(uri, BrowserLaunchMode.SystemPreferred);
+            }
+            catch (Exception ex)
+            {
+                // 4. Handle potential errors, like a malformed URL.
+                System.Diagnostics.Debug.WriteLine($"Failed to open link: {ex.Message}");
+                await Shell.Current.DisplayAlert("Invalid Link", $"Could not open the link: {url}", "OK");
+            }
         }
     }
 }
