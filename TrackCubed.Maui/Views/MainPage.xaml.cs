@@ -18,16 +18,13 @@ namespace TrackCubed.Maui.Views
         {
             base.OnAppearing();
 
+            // This ensures our initialization logic only runs ONCE,
+            // when the app is first started.
             if (_isFirstAppearance)
             {
                 _isFirstAppearance = false;
-
-                // Call BOTH commands on the first appearance of the page.
-                // Let them run in parallel for better performance.
-                await Task.WhenAll(
-                    _viewModel.LoadFilterOptionsCommand.ExecuteAsync(null),
-                    _viewModel.RefreshCommand.ExecuteAsync(null)
-                );
+                // Execute the new, consolidated initialization command.
+                await _viewModel.InitializeCommand.ExecuteAsync(null);
             }
         }
     }

@@ -17,6 +17,7 @@ namespace TrackCubed.Maui.Services
         private readonly HttpClient _httpClient;
         private readonly IServiceProvider _services; // Use the service provider to break circular dependencies
         private const string LastTagCleanupKey = "LastTagCleanup";
+        private const string LastItemTypeCleanupKey = "LastItemTypeCleanup";
 
         public CubedDataService(HttpClient httpClient, IServiceProvider services)
         {
@@ -90,7 +91,7 @@ namespace TrackCubed.Maui.Services
                     {
                         // The API returns the created item, so we deserialize it.
                         // This is the line that might be failing silently.
-                        var createdItemDto = await response.Content.ReadFromJsonAsync<CubedItemDto>().ConfigureAwait(false); 
+                        var createdItemDto = await response.Content.ReadFromJsonAsync<CubedItemDto>().ConfigureAwait(false);
                         return createdItemDto;
                     }
                     catch (JsonException ex)
@@ -273,19 +274,28 @@ namespace TrackCubed.Maui.Services
             }
         }
 
-        public async Task CleanUpOrphanedTagsIfNeededAsync()
+        public Task CleanUpOrphanedTagsIfNeededAsync()
         {
-            var lastCleanupTime = Preferences.Get(LastTagCleanupKey, DateTime.MinValue);
-            if ((DateTime.UtcNow - lastCleanupTime).TotalMinutes > 24)
+            // Wrap the entire logic in Task.Run to immediately move it off the UI thread.
+            // We now return the Task directly, so the caller can await it.
+            return Task.Run(async () =>
             {
-                System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Running...");
-                int deletedCount = await CleanUpOrphanedTagsAsync(); // Your existing method
-                if (deletedCount >= 0)
+                var lastCleanupTime = Preferences.Get(LastTagCleanupKey, DateTime.MinValue);
+                if ((DateTime.UtcNow - lastCleanupTime).TotalHours > 24)
                 {
-                    Preferences.Set(LastTagCleanupKey, DateTime.UtcNow);
-                    System.Diagnostics.Debug.WriteLine($"[Auto-Cleanup] Success. Deleted {deletedCount} tags.");
+                    System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Running orphaned tag cleanup...");
+                    int deletedCount = await CleanUpOrphanedTagsAsync();
+                    if (deletedCount >= 0)
+                    {
+                        Preferences.Set(LastTagCleanupKey, DateTime.UtcNow);
+                        System.Diagnostics.Debug.WriteLine($"[Auto-Cleanup] Success. Deleted {deletedCount} tags.");
+                    }
                 }
-            }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Less than 24 hours have passed since last tag cleanup. Skipping.");
+                }
+            });
         }
 
         public async Task<List<ItemType>> GetAvailableItemTypesAsync()
@@ -335,6 +345,33 @@ namespace TrackCubed.Maui.Services
                 System.Diagnostics.Debug.WriteLine($"Exception cleaning up item types: {ex.Message}");
                 return -1;
             }
+        }
+
+        public Task CleanUpOrphanedItemTypesIfNeededAsync()
+        {
+            // Also wrap this method's logic in Task.Run
+            return Task.Run(async () =>
+            {
+                var lastCleanupTime = Preferences.Get(LastItemTypeCleanupKey, DateTime.MinValue);
+                if ((DateTime.UtcNow - lastCleanupTime).TotalHours > 24)
+                {
+                    System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Running orphaned item type cleanup...");
+                    int deletedCount = await CleanUpOrphanedItemTypesAsync();
+                    if (deletedCount >= 0)
+                    {
+                        Preferences.Set(LastItemTypeCleanupKey, DateTime.UtcNow);
+                        System.Diagnostics.Debug.WriteLine($"[Auto-Cleanup] Success. Deleted {deletedCount} custom item types.");
+                    }
+                    else
+                    {
+                        System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Failed to clean item types. Will try again on next app start.");
+                    }
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine("[Auto-Cleanup] Less than 24 hours have passed since last item type cleanup. Skipping.");
+                }
+            });
         }
     }
 }

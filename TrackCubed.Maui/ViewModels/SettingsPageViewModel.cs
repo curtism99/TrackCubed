@@ -70,7 +70,9 @@ namespace TrackCubed.Maui.ViewModels
             if (confirmed)
             {
                 await _authService.SignOutAsync();
-                AppShell.OnLoginStateChanged?.Invoke();
+
+                // Send a message to any part of the app that is listening.
+                WeakReferenceMessenger.Default.Send(new SignOutMessage(true));
             }
         }
 

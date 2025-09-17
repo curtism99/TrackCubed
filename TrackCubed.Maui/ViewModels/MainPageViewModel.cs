@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -29,6 +30,13 @@ namespace TrackCubed.Maui.ViewModels
         private bool _areAllItemsLoaded = false;
 
         private CancellationTokenSource _searchCancellationTokenSource;
+
+        [ObservableProperty]
+        [NotifyPropertyChangedFor(nameof(IsReady))] // <-- ADD THIS ATTRIBUTE
+        private bool _isBusy = true;
+
+        // This computed property now works perfectly.
+        public bool IsReady => !IsBusy;
 
         [ObservableProperty] 
         private bool _isRefreshing;
@@ -75,12 +83,9 @@ namespace TrackCubed.Maui.ViewModels
             ItemTypeFilterOptions = new ObservableCollection<ItemType>();
             TagSuggestions = new ObservableCollection<string>();
 
-            // Register to receive the message
+            // Register for messages as before
             WeakReferenceMessenger.Default.Register<RefreshItemsMessage>(this, (r, m) =>
             {
-                // When a message is received, execute the LoadItemsCommand.
-                // Ensure the command is executed on the main UI thread.
-                // This prevents deadlocks when the message is received.
                 MainThread.BeginInvokeOnMainThread(() =>
                 {
                     if (RefreshCommand.CanExecute(null))
@@ -89,6 +94,49 @@ namespace TrackCubed.Maui.ViewModels
                     }
                 });
             });
+        }
+
+        // This command will orchestrate all startup tasks.
+        [RelayCommand]
+        private async Task InitializeAsync()
+        {
+            // The IsBusy flag is already true, so no need to set it again.
+            try
+            {
+                Debug.WriteLine("Starting initial page load and cleanup...");
+
+                // Create a list of tasks that can run in parallel.
+                // Loading filter options and performing cleanup do not depend on each other.
+                var initializationTasks = new List<Task>
+                {
+                    LoadFilterOptionsCommand.ExecuteAsync(null),
+                    _cubedDataService.CleanUpOrphanedTagsIfNeededAsync(),
+                    _cubedDataService.CleanUpOrphanedItemTypesIfNeededAsync()
+                };
+
+                // Wait for all of them to complete.
+                await Task.WhenAll(initializationTasks);
+                Debug.WriteLine("Cleanup and filter loading complete.");
+
+                // Now that the initial setup is done, load the first page of items.
+                // We execute the RefreshCommand to ensure consistent behavior.
+                await RefreshCommand.ExecuteAsync(null);
+                Debug.WriteLine("Initial items loaded.");
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[CRITICAL] Page initialization failed: {ex.Message}");
+                // Show a user-friendly error. This is crucial for handling startup failures.
+                await Shell.Current.DisplayAlert("Initialization Error", "Could not load data. Please check your connection and restart the app.", "OK");
+            }
+            finally
+            {
+                // No matter what happens, ensure the loading indicator is hidden
+                // and the main content becomes visible.
+                IsBusy = false;
+                // We must notify the UI that our computed property has also changed.
+                OnPropertyChanged(nameof(IsReady));
+            }
         }
 
         // This is the new command for loading/refreshing data
@@ -136,8 +184,22 @@ namespace TrackCubed.Maui.ViewModels
         [RelayCommand]
         private async Task SignOutAsync()
         {
-            await _authService.SignOutAsync();
-            AppShell.OnLoginStateChanged?.Invoke();
+            bool confirmed = await Shell.Current.DisplayAlert(
+                "Sign Out",
+                "Are you sure you want to sign out?",
+                "Yes, Sign Out",
+                "Cancel");
+
+            if (confirmed)
+            {
+                await _authService.SignOutAsync();
+
+                // OLD CODE (to be removed):
+                // AppShell.OnLoginStateChanged?.Invoke();
+
+                // NEW CODE: Send a message to any part of the app that is listening.
+                WeakReferenceMessenger.Default.Send(new SignOutMessage(true));
+            }
         }
 
         [RelayCommand]

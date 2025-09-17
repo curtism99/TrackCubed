@@ -1,12 +1,14 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using System.Net.Http.Headers;
-using System.Text.Json; // For potential deserialization of the user object
+using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Net.Http.Headers;
+using System.Reflection.Metadata;
 using System.Text;
+using System.Text.Json; // For potential deserialization of the user object
 using System.Threading.Tasks;
 using TrackCubed.Maui.Services;
 using TrackCubed.Maui.Views;
@@ -18,16 +20,25 @@ namespace TrackCubed.Maui.ViewModels
         private readonly AuthService _authService;
         private readonly HttpClient _httpClient;
 
+        // *** CHANGE 1: Inject InitializationService and IServiceProvider ***
+        // We need the InitializationService to run post-login tasks.
+        // We need IServiceProvider to get a fresh instance of AppShell.
+        private readonly InitializationService _initializationService;
+        private readonly IServiceProvider _serviceProvider;
+
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(IsNotBusy))]
         private bool _isBusy;
 
         public bool IsNotBusy => !IsBusy;
 
-        public LoginPageViewModel(AuthService authService, HttpClient httpClient)
+        // *** CHANGE 2: Update the constructor to accept the new services ***
+        public LoginPageViewModel(AuthService authService, HttpClient httpClient, InitializationService initializationService, IServiceProvider serviceProvider)
         {
             _authService = authService;
             _httpClient = httpClient;
+            _initializationService = initializationService;
+            _serviceProvider = serviceProvider;
         }
 
         [RelayCommand]
@@ -40,17 +51,29 @@ namespace TrackCubed.Maui.ViewModels
 
             try
             {
-                string accessToken = await _authService.InteractiveLoginAsync();
+                AuthenticationResult authResult = await _authService.InteractiveLoginAsync();
 
-                if (string.IsNullOrEmpty(accessToken))
+                if (authResult == null || string.IsNullOrEmpty(authResult.AccessToken))
                 {
-                    // User might have cancelled the login
-                    await Shell.Current.DisplayAlert("Login Failed", "Could not acquire access token. Please try again.", "OK");
+                    await Shell.Current.DisplayAlert("Login Failed", "Could not sign you in. Please try again.", "OK");
                     return;
                 }
 
-                // Call the onboarding API endpoint
-                await OnboardUserWithApi(accessToken);
+                // OnboardUserWithApi will now return a boolean indicating success
+                bool onboardSuccess = await OnboardUserWithApi(authResult.AccessToken);
+
+                // *** CHANGE 3: The new navigation logic ***
+                if (onboardSuccess)
+                {
+                    Debug.WriteLine("[LoginPageViewModel] Onboarding successful. Swapping to AppShell...");
+
+                    // A. Run all the background data tasks AFTER successful onboarding.
+                    await _initializationService.InitializeAfterLoginAsync();
+
+                    // B. Replace the entire application's root page with a new AppShell.
+                    // This is the clean, robust way to transition to the main app.
+                    Application.Current.MainPage = _serviceProvider.GetRequiredService<AppShell>();
+                }
             }
             catch (Exception ex)
             {
@@ -62,11 +85,11 @@ namespace TrackCubed.Maui.ViewModels
             }
         }
 
-        private async Task OnboardUserWithApi(string token)
+        // *** CHANGE 4: Refactor OnboardUserWithApi to return a success/failure boolean ***
+        private async Task<bool> OnboardUserWithApi(string token)
         {
             try
             {
-                // Create the request and add the token to the header for authorization
                 var request = new HttpRequestMessage(HttpMethod.Post, "api/user/onboard");
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
 
@@ -74,22 +97,22 @@ namespace TrackCubed.Maui.ViewModels
 
                 if (response.IsSuccessStatusCode)
                 {
-                    // User is now logged in and registered in our backend!
-                    // INSTEAD of navigating, we notify the AppShell that the login state has changed.
-                    // The AppShell will then handle the UI changes and navigation.
-                    AppShell.OnLoginStateChanged?.Invoke();
+                    // The API call worked. Return true.
+                    return true;
                 }
                 else
                 {
-                    // The API returned an error (e.g., 401 Unauthorized, 500 Server Error)
+                    // The API call failed. Show an error and return false.
                     string errorContent = await response.Content.ReadAsStringAsync();
                     await Shell.Current.DisplayAlert("API Error", $"The server responded with an error: {response.ReasonPhrase}\n{errorContent}", "OK");
+                    return false;
                 }
             }
             catch (HttpRequestException ex)
             {
-                // This catches network-related errors (e.g., API is offline)
+                // A network error occurred. Show an error and return false.
                 await Shell.Current.DisplayAlert("Network Error", $"Could not connect to the server. Please check your connection and try again. Details: {ex.Message}", "OK");
+                return false;
             }
         }
     }

@@ -1,64 +1,46 @@
-﻿using TrackCubed.Maui.Services;
+﻿using CommunityToolkit.Mvvm.Messaging;
+using System.Diagnostics;
+using TrackCubed.Maui.Messages;
+using TrackCubed.Maui.Services;
 using TrackCubed.Maui.Views;
 
 namespace TrackCubed.Maui
 {
-    public partial class AppShell : Shell
+    public partial class AppShell : Shell, IRecipient<SignOutMessage>
     {
-        // A static action that any part of the app can call to trigger a UI update.
-        public static Action OnLoginStateChanged;
-        private bool _isInitialCheckComplete = false;
-        private readonly AuthService _authService;
-        public AppShell(AuthService authService, CubedDataService dataService)
+        public AppShell(AuthService authService, InitializationService initializationService)
         {
             InitializeComponent();
-            _authService = authService;
 
-            // Subscribe to the event so we can react to manual logins/logouts
-            // We no longer call the check from the constructor.
-            AppShell.OnLoginStateChanged += SetUiForLoginState;
+            WeakReferenceMessenger.Default.Register<SignOutMessage>(this);
 
-            // Register routes for pages that will be navigated to.
+            // --- Route Registrations ---
+
+            // Register pages that can be navigated to directly.
+            // This allows for calls like GoToAsync("LoginPage"), GoToAsync("MainPage"), etc.
+            Routing.RegisterRoute(nameof(LoginPage), typeof(LoginPage));
+            Routing.RegisterRoute(nameof(MainPage), typeof(MainPage));
             Routing.RegisterRoute(nameof(AddCubedItemPage), typeof(AddCubedItemPage));
-            dataService.CleanUpOrphanedTagsIfNeededAsync();
+
+            // Register the TabBar itself as a route. 
+            // This is necessary for the absolute navigation `//MainAppTabs` to work on startup.
+            Routing.RegisterRoute("MainAppTabs", typeof(MainPage));
         }
 
-        // OnAppearing is a built-in MAUI lifecycle method that is called
-        // when the Shell is about to be displayed on screen.
-        // By this time, Shell.Current is guaranteed to be set.
-        protected override async void OnAppearing()
+        
+        // This method is required by IRecipient and handles the incoming message
+        public async void Receive(SignOutMessage message)
         {
-            base.OnAppearing();
-
-            // Only run this initial check the very first time the app appears.
-            if (!_isInitialCheckComplete)
+            // A sign-out message was received. The value is true if sign-out was successful.
+            if (message.Value)
             {
-                _isInitialCheckComplete = true;
-                SetUiForLoginState();
+                Debug.WriteLine("[AppShell] SignOutMessage received. Navigating to LoginPage.");
+                // Use a dispatcher to ensure navigation happens on the UI thread.
+                await MainThread.InvokeOnMainThreadAsync(async () =>
+                {
+                    await GoToAsync($"//{nameof(LoginPage)}");
+                });
             }
-        }
-
-        private async void SetUiForLoginState()
-        {
-            var accounts = await _authService.GetLoggedInAccountsAsync();
-
-            // Use MainThread.BeginInvokeOnMainThread to ensure UI updates
-            // and navigation happen on the correct thread, preventing potential crashes.
-            MainThread.BeginInvokeOnMainThread(async () =>
-            {
-                if (accounts.Any())
-                {
-                    // User is logged in
-                    MainAppTabs.IsVisible = true;
-                    await Shell.Current.GoToAsync("//MainPage");
-                }
-                else
-                {
-                    // User is logged out
-                    MainAppTabs.IsVisible = false;
-                    await Shell.Current.GoToAsync("//LoginPage");
-                }
-            });
         }
     }
 }

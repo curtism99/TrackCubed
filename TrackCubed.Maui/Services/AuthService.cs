@@ -15,6 +15,10 @@ namespace TrackCubed.Maui.Services
         private IPublicClientApplication _pca;
         private AuthenticationResult _authResult;
 
+        // This object acts as the "gatekeeper" for our initialization.
+        // It holds a Task that we can await. The task only completes when we tell it to.
+        private readonly TaskCompletionSource<bool> _initializationComplete = new TaskCompletionSource<bool>();
+
 #if WINDOWS
         // This helper is only used on the Windows platform.
         private MsalCacheHelper _cacheHelper;
@@ -30,6 +34,9 @@ namespace TrackCubed.Maui.Services
 
         private async void InitializeMsalClientAsync()
         {
+
+            try
+            {
 #if WINDOWS
             // --- WINDOWS-SPECIFIC DESKTOP CACHING LOGIC ---
             var storageProperties =
@@ -56,27 +63,38 @@ namespace TrackCubed.Maui.Services
             _cacheHelper.RegisterCache(_pca.UserTokenCache);
 
 #else
-            // --- ANDROID / iOS / MACCATALYST LOGIC ---
-            // On mobile platforms, we use the default builder without the file cache helper.
-            // MSAL handles the in-memory cache automatically.
-            _pca = PublicClientApplicationBuilder.Create(EntraIdConstants.ClientId)
+                // --- ANDROID / iOS / MACCATALYST LOGIC ---
+                // On mobile platforms, we use the default builder without the file cache helper.
+                // MSAL handles the in-memory cache automatically.
+                _pca = PublicClientApplicationBuilder.Create(EntraIdConstants.ClientId)
                         .WithTenantId(EntraIdConstants.TenantId)
                         .WithDefaultRedirectUri()
                         .Build();
-            await Task.CompletedTask; // To make the method async
 
 #endif
-        }
 
-
-
-        private async Task WaitForInitialization()
-        {
-            while (_pca == null)
+            // Initialization is done. Set the result to true to "open the gate".
+            // Any code awaiting our task will now unblock and continue.
+            _initializationComplete.SetResult(true);
+            }
+            catch (Exception ex)
             {
-                await Task.Delay(100).ConfigureAwait(false);
+                System.Diagnostics.Debug.WriteLine($"FATAL: MSAL client initialization failed: {ex.Message}");
+
+                // *** THE FIX: Part 3 - Signal Failure ***
+                // Something went wrong. Signal the failure.
+                _initializationComplete.SetException(ex);
             }
         }
+
+
+        // This is the new, correct implementation. It simply awaits the single task.
+        // No loops, no polling, no wasted CPU.
+        private Task WaitForInitialization()
+        {
+            return _initializationComplete.Task;
+        }
+
 
         /// <summary>
         /// Attempts to sign in the user silently using the cached token.
@@ -115,32 +133,81 @@ namespace TrackCubed.Maui.Services
         /// Performs the interactive sign-in flow, showing the browser UI.
         /// </summary>
         /// <returns>An access token if successful, otherwise null.</returns>
-        public async Task<string> InteractiveLoginAsync()
+        public async Task<AuthenticationResult> InteractiveLoginAsync()
         {
             await WaitForInitialization();
             try
             {
-                _authResult = await _pca.AcquireTokenInteractive(EntraIdConstants.Scopes)
-                                        // Replace this line:
-                                        // .WithParentActivityOrWindow(Microsoft.Maui.ApplicationModel.Platform.CurrentActivity)
+                // 1. Get all accounts MSAL already knows about for this app.
+                var accounts = await _pca.GetAccountsAsync().ConfigureAwait(false);
+                IAccount firstAccount = accounts.FirstOrDefault();
 
-                                        // With the following platform-specific logic:
+                // 2. BEST PRACTICE: Try to get a token silently first.
+                //    If successful, the user avoids the login prompt entirely.
+                if (firstAccount != null)
+                {
+                    try
+                    {
+                        // This will use the cached refresh token to get a new access token.
+                        return await _pca.AcquireTokenSilent(EntraIdConstants.Scopes, firstAccount)
+                                         .ExecuteAsync()
+                                         .ConfigureAwait(false);
+                    }
+                    catch (MsalUiRequiredException)
+                    {
+                        // This is not an error. It's an expected condition if the token has expired
+                        // or consent is needed. We'll fall through to the interactive login.
+                        System.Diagnostics.Debug.WriteLine("Silent token acquisition failed. UI is required.");
+                    }
+                }
+
+                // 3. If silent auth fails or no account exists, proceed with interactive login.
+                //    We create a "builder" to conditionally add our parameters.
+                var interactiveRequestBuilder = _pca.AcquireTokenInteractive(EntraIdConstants.Scopes);
+
+                // 4. THIS IS THE FIX: If we have a known account, use it.
+                //    This provides the best "Welcome back" experience and avoids the "mailto:" link issue.
+                if (firstAccount != null)
+                {
+                    interactiveRequestBuilder.WithAccount(firstAccount);
+                }
+
+                // 5. YOUR PLATFORM LOGIC IS PRESERVED HERE:
+                //    We add the platform-specific parent window/activity to the builder.
 #if ANDROID
-                                            .WithParentActivityOrWindow(Microsoft.Maui.ApplicationModel.Platform.CurrentActivity)
+                interactiveRequestBuilder.WithParentActivityOrWindow(Microsoft.Maui.ApplicationModel.Platform.CurrentActivity);
 #elif WINDOWS
-                                            // On Windows, you can pass null or use a window handle if available.
-                                            .WithParentActivityOrWindow(App.Current.MainPage)
-#else
-                                        // On other platforms, you may need to omit this method or provide the appropriate window/activity.
+        // Note: Using App.Current.MainPage might work, but the official recommendation
+        // is often a window handle (IntPtr). If this works for you, it's fine.
+        interactiveRequestBuilder.WithParentActivityOrWindow(App.Current.MainPage); 
 #endif
-                                        .ExecuteAsync()
-                                        .ConfigureAwait(false);
+                // On other platforms (iOS, MacCatalyst), .WithParentActivityOrWindow is often not needed
+                // as MSAL can infer the top view controller.
 
-                return _authResult?.AccessToken;
+                // 6. Execute the interactive request we have built.
+                _authResult = await interactiveRequestBuilder.ExecuteAsync()
+                                                             .ConfigureAwait(false);
+
+                // CRITICAL FIX: Return the entire AuthenticationResult object.
+                // The calling code needs the full result to access the IAccount for the next silent call,
+                // not just the access token string.
+                return _authResult;
+            }
+            catch (MsalClientException ex)
+            {
+                // Specifically handle cases where the user cancels the login prompt.
+                if (ex.ErrorCode == "authentication_canceled")
+                {
+                    System.Diagnostics.Debug.WriteLine("User cancelled the sign-in.");
+                    return null;
+                }
+                // Handle other client-side MSAL errors.
+                System.Diagnostics.Debug.WriteLine($"MSAL Client Error during interactive sign-in: {ex.Message}");
+                return null;
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error during interactive sign-in: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Generic Error during interactive sign-in: {ex.Message}");
                 return null;
             }
         }
