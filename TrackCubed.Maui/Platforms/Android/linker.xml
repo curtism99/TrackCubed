@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="UTF-8" ?>
+<linker>
+  <assembly fullname="TrackCubed.Maui" preserve="all" />
+  <assembly fullname="TrackCubed.Shared" preserve="all" />
+
+  <assembly fullname="Microsoft.Extensions.DependencyInjection" preserve="all" />
+  <assembly fullname="Microsoft.Extensions.DependencyInjection.Abstractions" preserve="all" />
+
+  <assembly fullname="CommunityToolkit.Mvvm" preserve="all" />
+
+  <assembly fullname="System.Core">
+    <type fullname="System.Linq.Expressions*" />
+  </assembly>
+</linker>

@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿#if ANDROID
+using Android.Runtime;
+#endif
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
@@ -14,6 +17,9 @@ using TrackCubed.Shared.Models;
 
 namespace TrackCubed.Maui.ViewModels
 {
+#if ANDROID
+    [Preserve(AllMembers = true)]
+#endif
     [QueryProperty(nameof(ItemToEdit), "ItemToEdit")]
     public partial class AddCubedItemViewModel : ObservableObject
     {

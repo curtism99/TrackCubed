@@ -1,4 +1,7 @@
-﻿using CommunityToolkit.Mvvm.ComponentModel;
+﻿#if ANDROID
+using Android.Runtime;
+#endif
+using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using CommunityToolkit.Mvvm.Messaging;
 using System;
@@ -11,6 +14,9 @@ using TrackCubed.Maui.Services;
 
 namespace TrackCubed.Maui.ViewModels
 {
+#if ANDROID
+    [Preserve(AllMembers = true)]
+#endif
     public partial class SettingsPageViewModel : ObservableObject
     {
         private readonly AuthService _authService;
