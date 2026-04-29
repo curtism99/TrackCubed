@@ -9,12 +9,10 @@ namespace TrackCubed.Maui.Services
     public class InitializationService
     {
         private readonly CubedDataService _dataService;
-        private readonly AuthService _authService;
 
-        public InitializationService(CubedDataService dataService, AuthService authService)
+        public InitializationService(CubedDataService dataService)
         {
             _dataService = dataService;
-            _authService = authService;
         }
 
         public async Task InitializeAfterLoginAsync()

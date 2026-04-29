@@ -1,6 +1,11 @@
 @TrackCubed.Api_HostAddress = http://localhost:5231
 
-GET {{TrackCubed.Api_HostAddress}}/weatherforecast/
+POST {{TrackCubed.Api_HostAddress}}/api/user/onboard
+Accept: application/json
+
+###
+
+GET {{TrackCubed.Api_HostAddress}}/api/ItemTypes
 Accept: application/json
 
 ###

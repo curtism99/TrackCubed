@@ -8,7 +8,7 @@ namespace TrackCubed.Maui
 {
     public partial class AppShell : Shell, IRecipient<SignOutMessage>
     {
-        public AppShell(AuthService authService, InitializationService initializationService)
+        public AppShell(IAuthService authService, InitializationService initializationService)
         {
             InitializeComponent();
 

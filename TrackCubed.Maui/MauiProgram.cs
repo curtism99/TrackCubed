@@ -27,14 +27,23 @@ namespace TrackCubed.Maui
             {
                 return new HttpClient
                 {
-                    // Set the single, production base address for your deployed API.
+#if DEBUG && WINDOWS
+                    // Local development API.
+                    BaseAddress = new Uri("http://localhost:5231")
+#else
+                    // Production API.
                     BaseAddress = new Uri("https://trackcubedapi20250911232429-b5hvbgdfd8hmbehe.centralus-01.azurewebsites.net")
+#endif
                 };
             });
 
 
             // Register Services
-            builder.Services.AddSingleton<AuthService>();
+#if DEBUG && WINDOWS
+            builder.Services.AddSingleton<IAuthService, DevelopmentAuthService>();
+#else
+            builder.Services.AddSingleton<IAuthService, AuthService>();
+#endif
             builder.Services.AddSingleton<CubedDataService>();
             builder.Services.AddSingleton<ThemeService>();
             builder.Services.AddSingleton<WordBankService>();

@@ -66,11 +66,6 @@ namespace TrackCubed.Api.Migrations
                     { 7, "Other" }
                 });
 
-            migrationBuilder.InsertData(
-                table: "Tags",
-                columns: new[] { "Id", "Name", "UserId" },
-                values: new object[] { 1, "dummy", 1 });
-
             migrationBuilder.CreateIndex(
                 name: "IX_UserItemTypes_UserId_Name",
                 table: "UserItemTypes",
@@ -98,11 +93,6 @@ namespace TrackCubed.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserItemTypes");
-
-            migrationBuilder.DeleteData(
-                table: "Tags",
-                keyColumn: "Id",
-                keyValue: 1);
 
             migrationBuilder.CreateTable(
                 name: "ItemTypes",

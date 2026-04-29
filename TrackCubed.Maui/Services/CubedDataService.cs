@@ -25,8 +25,8 @@ namespace TrackCubed.Maui.Services
             _services = services;
         }
 
-        // It safely resolves the AuthService from the DI container.
-        private AuthService GetAuthService() => _services.GetRequiredService<AuthService>();
+        // It safely resolves the auth service from the DI container.
+        private IAuthService GetAuthService() => _services.GetRequiredService<IAuthService>();
 
         public async Task<List<CubedItemDto>> GetMyCubedItemsAsync()
         {

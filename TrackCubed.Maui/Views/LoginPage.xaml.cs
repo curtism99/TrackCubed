@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Net.Http.Headers;
 using TrackCubed.Maui.Services;
 using TrackCubed.Maui.ViewModels;
 
@@ -27,7 +28,7 @@ public partial class LoginPage : ContentPage
         // Use BeginInvokeOnMainThread to ensure this runs after the page is fully appeared.
         MainThread.BeginInvokeOnMainThread(async () =>
         {
-            var authService = _services.GetRequiredService<AuthService>();
+            var authService = _services.GetRequiredService<IAuthService>();
             var initializationService = _services.GetRequiredService<InitializationService>();
 
             try
@@ -35,8 +36,12 @@ public partial class LoginPage : ContentPage
                 var token = await authService.SilentSignInAsync();
                 if (!string.IsNullOrEmpty(token))
                 {
-                    await initializationService.InitializeAfterLoginAsync();
+                    if (!await OnboardUserWithApiAsync(token))
+                    {
+                        return;
+                    }
 
+                    await initializationService.InitializeAfterLoginAsync();
                     // *** THE FINAL FIX ***
                     // Add a very small, non-blocking delay.
                     // This allows the UI thread to finish its current work
@@ -51,5 +56,30 @@ public partial class LoginPage : ContentPage
                 Debug.WriteLine($"[LoginPage] Critical error during silent sign-in: {ex.Message}");
             }
         });
+    }
+
+    private async Task<bool> OnboardUserWithApiAsync(string token)
+    {
+        try
+        {
+            var httpClient = _services.GetRequiredService<HttpClient>();
+            var request = new HttpRequestMessage(HttpMethod.Post, "api/user/onboard");
+            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+
+            var response = await httpClient.SendAsync(request);
+            if (response.IsSuccessStatusCode)
+            {
+                return true;
+            }
+
+            var errorContent = await response.Content.ReadAsStringAsync();
+            Debug.WriteLine($"[LoginPage] Silent sign-in onboarding failed: {response.StatusCode} {errorContent}");
+            return false;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[LoginPage] Silent sign-in onboarding exception: {ex.Message}");
+            return false;
+        }
     }
 }
