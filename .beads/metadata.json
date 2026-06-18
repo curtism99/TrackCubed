@@ -1,0 +1,7 @@
+{
+  "database": "dolt",
+  "backend": "dolt",
+  "dolt_mode": "embedded",
+  "dolt_database": "TrackCubed",
+  "project_id": "4b8a8799-0542-4881-89df-86fc373f810c"
+}
