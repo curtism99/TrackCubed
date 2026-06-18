@@ -10,10 +10,10 @@ using System.Security.Claims;
 
 namespace TrackCubed.Maui.Services
 {
-       public class AuthService
+       public class AuthService : IAuthService
     {
         private IPublicClientApplication _pca;
-        private AuthenticationResult _authResult;
+        private AuthenticationResult? _authResult;
 
         // This object acts as the "gatekeeper" for our initialization.
         // It holds a Task that we can await. The task only completes when we tell it to.
@@ -133,7 +133,7 @@ namespace TrackCubed.Maui.Services
         /// Performs the interactive sign-in flow, showing the browser UI.
         /// </summary>
         /// <returns>An access token if successful, otherwise null.</returns>
-        public async Task<AuthenticationResult> InteractiveLoginAsync()
+        public async Task<AuthSession?> InteractiveLoginAsync()
         {
             await WaitForInitialization();
             try
@@ -149,9 +149,10 @@ namespace TrackCubed.Maui.Services
                     try
                     {
                         // This will use the cached refresh token to get a new access token.
-                        return await _pca.AcquireTokenSilent(EntraIdConstants.Scopes, firstAccount)
-                                         .ExecuteAsync()
-                                         .ConfigureAwait(false);
+                        _authResult = await _pca.AcquireTokenSilent(EntraIdConstants.Scopes, firstAccount)
+                                                .ExecuteAsync()
+                                                .ConfigureAwait(false);
+                        return CreateSession(_authResult);
                     }
                     catch (MsalUiRequiredException)
                     {
@@ -188,10 +189,7 @@ namespace TrackCubed.Maui.Services
                 _authResult = await interactiveRequestBuilder.ExecuteAsync()
                                                              .ConfigureAwait(false);
 
-                // CRITICAL FIX: Return the entire AuthenticationResult object.
-                // The calling code needs the full result to access the IAccount for the next silent call,
-                // not just the access token string.
-                return _authResult;
+                return CreateSession(_authResult);
             }
             catch (MsalClientException ex)
             {
@@ -216,7 +214,7 @@ namespace TrackCubed.Maui.Services
         /// Gets a valid access token, refreshing silently if needed.
         /// This is for making API calls after the initial login.
         /// </summary>
-        public async Task<string> GetAccessTokenAsync()
+        public async Task<string?> GetAccessTokenAsync()
         {
             await WaitForInitialization().ConfigureAwait(false);
             var accounts = await _pca.GetAccountsAsync().ConfigureAwait(false);
@@ -277,6 +275,19 @@ namespace TrackCubed.Maui.Services
             var email = _authResult.ClaimsPrincipal.FindFirst("preferred_username")?.Value ?? "N/A";
 
             return (name, email);
+        }
+
+        private static AuthSession? CreateSession(AuthenticationResult? result)
+        {
+            if (result == null || string.IsNullOrWhiteSpace(result.AccessToken))
+            {
+                return null;
+            }
+
+            var name = result.ClaimsPrincipal?.FindFirst("name")?.Value ?? "N/A";
+            var email = result.ClaimsPrincipal?.FindFirst("preferred_username")?.Value ?? "N/A";
+
+            return new AuthSession(result.AccessToken, name, email);
         }
     }
 }

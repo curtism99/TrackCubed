@@ -19,7 +19,7 @@ namespace TrackCubed.Maui.ViewModels
     public partial class MainPageViewModel : ObservableObject
     {
         private readonly CubedDataService _cubedDataService;
-        private readonly AuthService _authService; // Also inject AuthService
+        private readonly IAuthService _authService;
 
         private int _currentPage = 1;
         private const int PageSize = 20;
@@ -73,10 +73,10 @@ namespace TrackCubed.Maui.ViewModels
         private bool _isExclusiveTagSearch; // Bound to the new Switch control
 
         // Inject both services
-        public MainPageViewModel(CubedDataService cubedDataService, AuthService authService)
+        public MainPageViewModel(CubedDataService cubedDataService, IAuthService authService)
         {
             _cubedDataService = cubedDataService;
-            _authService = authService; // For the SignOut command
+            _authService = authService;
             Items = new ObservableCollection<CubedItemDto>();
             Title = "Track³ | My Cubes";
             AppliedTags = new ObservableCollection<string>();

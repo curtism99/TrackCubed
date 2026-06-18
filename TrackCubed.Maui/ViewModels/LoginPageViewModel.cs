@@ -1,6 +1,5 @@
 ﻿using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
-using Microsoft.Identity.Client;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -17,7 +16,7 @@ namespace TrackCubed.Maui.ViewModels
 {
     public partial class LoginPageViewModel : ObservableObject
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         private readonly HttpClient _httpClient;
 
         // *** CHANGE 1: Inject InitializationService and IServiceProvider ***
@@ -33,7 +32,7 @@ namespace TrackCubed.Maui.ViewModels
         public bool IsNotBusy => !IsBusy;
 
         // *** CHANGE 2: Update the constructor to accept the new services ***
-        public LoginPageViewModel(AuthService authService, HttpClient httpClient, InitializationService initializationService, IServiceProvider serviceProvider)
+        public LoginPageViewModel(IAuthService authService, HttpClient httpClient, InitializationService initializationService, IServiceProvider serviceProvider)
         {
             _authService = authService;
             _httpClient = httpClient;
@@ -51,7 +50,7 @@ namespace TrackCubed.Maui.ViewModels
 
             try
             {
-                AuthenticationResult authResult = await _authService.InteractiveLoginAsync();
+                AuthSession? authResult = await _authService.InteractiveLoginAsync();
 
                 if (authResult == null || string.IsNullOrEmpty(authResult.AccessToken))
                 {

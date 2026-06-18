@@ -19,7 +19,7 @@ namespace TrackCubed.Maui.ViewModels
 #endif
     public partial class SettingsPageViewModel : ObservableObject
     {
-        private readonly AuthService _authService;
+        private readonly IAuthService _authService;
         private readonly ThemeService _themeService;
         private readonly CubedDataService _cubedDataService;
         private readonly WordBankService _wordBankService;
@@ -40,7 +40,7 @@ namespace TrackCubed.Maui.ViewModels
         private string _selectedTheme;
 
 
-        public SettingsPageViewModel(AuthService authService, ThemeService themeService, CubedDataService cubedDataService, WordBankService wordBankService)
+        public SettingsPageViewModel(IAuthService authService, ThemeService themeService, CubedDataService cubedDataService, WordBankService wordBankService)
         {
             _authService = authService;
             _themeService = themeService;
